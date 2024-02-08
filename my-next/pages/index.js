@@ -5,8 +5,12 @@ import Script from "next/script";
 import Modal from "react-bootstrap/Modal";
 import LZString from "lz-string";
 import Link from "next/link";
+import myWorkScript from "../public/app";
 
 export default function Home() {
+  useEffect(() => {
+    myWorkScript(LZString);
+  }, []);
   return (
     <div>
       <Head>
@@ -110,7 +114,7 @@ export default function Home() {
         crossorigin="anonymous"
         referrerpolicy="no-referrer"
       ></Script>
-      <Script src="/app.js"></Script>
+
       <footer>
         &copy; Made By
         <a
