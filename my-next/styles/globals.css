@@ -1,0 +1,794 @@
+@charset "UTF-8";
+.popover {
+  border: 2px solid black;
+  /* 其他樣式覆寫 */
+}
+
+* {
+  padding: 0;
+  border: 0;
+  box-sizing: border-box;
+}
+
+body main section.cal-Area {
+  position: relative;
+  border: 3px blue solid;
+  height: 80vh;
+  width: 90vw;
+  left: 2rem;
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: row-reverse;
+}
+body main section.cal-Area form {
+  width: 70%;
+  height: 100%;
+  overflow-y: scroll;
+  display: flex;
+  flex-direction: column;
+}
+body main section.cal-Area form section.yoichi-block-title {
+  margin-top: 1rem;
+}
+body main section.cal-Area form section.yoichi-block {
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+body main section.cal-Area form section.yoichi-block .yoichi-p-name {
+  color: red;
+  text-align: center;
+  flex-grow: 1;
+  flex-basis: 15%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+body main section.cal-Area form section.yoichi-block .yoichi-p-name p {
+  margin: 0;
+}
+body main section.cal-Area form section.yoichi-block .yoichi-p-number {
+  flex-grow: 1;
+  flex-basis: 5%;
+  text-align: center;
+}
+body main section.cal-Area form section.yoichi-block input[type="text"] {
+  width: 10%;
+}
+body main section.cal-Area form section.yoichi-block .yoichi-p-btns {
+  flex-grow: 1;
+  flex-basis: 70%;
+  text-align: center;
+  display: flex;
+  justify-content: space-around;
+}
+body main section.cal-Area form section.yoichi-block .yoichi-p-btns div {
+  flex-basis: 15%;
+}
+body main section.cal-Area form section.yoichi-block .yoichi-p-btns div button {
+  width: 100%;
+  font-weight: 500;
+}
+body main section.cal-Area section.totalize {
+  display: flex;
+  flex-direction: column;
+  flex-basis: 30%;
+  border-right: blue solid 2px;
+}
+body main section.cal-Area section.totalize .yoichi-order {
+  display: flex;
+  flex-basis: 15%;
+}
+body
+  main
+  section.cal-Area
+  section.totalize
+  .yoichi-order
+  .yoichi-orderNumber::before {
+  content: "No.";
+}
+body main section.cal-Area section.totalize .yoichi-order .yoichi-orderTime {
+  border-bottom: green solid 2px;
+  flex-basis: 40%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+body main section.cal-Area section.totalize .yoichi-order .yoichi-orderTime p {
+  margin: 0;
+}
+body main section.cal-Area section.totalize .yoichi-order .yoichi-orderNumber {
+  border-bottom: green solid 2px;
+  flex-basis: 60%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+body
+  main
+  section.cal-Area
+  section.totalize
+  .yoichi-order
+  .yoichi-orderNumber
+  p {
+  margin: 0;
+}
+body main section.cal-Area section.totalize .yoichi-calculating {
+  margin-top: 2rem;
+  flex-basis: 50%;
+  display: flex;
+  flex-direction: column;
+}
+body
+  main
+  section.cal-Area
+  section.totalize
+  .yoichi-calculating
+  .yoichi-subtotalArea {
+  flex-basis: 30%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+body
+  main
+  section.cal-Area
+  section.totalize
+  .yoichi-calculating
+  .yoichi-subtotalArea
+  .yoichi-subtotal {
+  flex-basis: 35%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+body
+  main
+  section.cal-Area
+  section.totalize
+  .yoichi-calculating
+  .yoichi-subtotalArea
+  .yoichi-subtotal
+  p {
+  margin: 0;
+}
+body
+  main
+  section.cal-Area
+  section.totalize
+  .yoichi-calculating
+  .yoichi-subtotalArea
+  .yoichi-subtotalValue {
+  flex-basis: 65%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+body
+  main
+  section.cal-Area
+  section.totalize
+  .yoichi-calculating
+  .yoichi-subtotalArea
+  .yoichi-subtotalValue
+  p {
+  margin: 0;
+}
+body
+  main
+  section.cal-Area
+  section.totalize
+  .yoichi-calculating
+  .yoichi-discountArea {
+  flex-basis: 30%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+body
+  main
+  section.cal-Area
+  section.totalize
+  .yoichi-calculating
+  .yoichi-discountArea
+  .yoichi-discount {
+  flex-basis: 35%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+body
+  main
+  section.cal-Area
+  section.totalize
+  .yoichi-calculating
+  .yoichi-discountArea
+  .yoichi-discount
+  p {
+  margin: 0;
+}
+body
+  main
+  section.cal-Area
+  section.totalize
+  .yoichi-calculating
+  .yoichi-discountArea
+  input[type="text"] {
+  width: 50%;
+  border-bottom: 2px solid black;
+}
+body
+  main
+  section.cal-Area
+  section.totalize
+  .yoichi-calculating
+  .yoichi-discountArea
+  .yoichi-discountValue {
+  flex-basis: 65%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+body
+  main
+  section.cal-Area
+  section.totalize
+  .yoichi-calculating
+  .yoichi-totalArea {
+  display: flex;
+  flex-basis: 40%;
+}
+body
+  main
+  section.cal-Area
+  section.totalize
+  .yoichi-calculating
+  .yoichi-totalArea
+  .yoichi-total {
+  flex-basis: 35%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+body
+  main
+  section.cal-Area
+  section.totalize
+  .yoichi-calculating
+  .yoichi-totalArea
+  .yoichi-total
+  p {
+  margin: 0;
+}
+body
+  main
+  section.cal-Area
+  section.totalize
+  .yoichi-calculating
+  .yoichi-totalArea
+  .yoichi-totalValue {
+  flex-basis: 65%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+body
+  main
+  section.cal-Area
+  section.totalize
+  .yoichi-calculating
+  .yoichi-totalArea
+  .yoichi-totalValue
+  p {
+  margin: 0;
+}
+body main section.cal-Area section.totalize .yoichi-split {
+  border-top: green solid 2px;
+  flex: 35%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+body main section.cal-Area section.totalize .yoichi-split .yoichi-tiptool {
+  flex-basis: 35%;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  align-items: center;
+}
+body main section.cal-Area section.totalize .yoichi-split .yoichi-tiptool p {
+  margin: 0;
+}
+body
+  main
+  section.cal-Area
+  section.totalize
+  .yoichi-split
+  .yoichi-tiptool
+  .yoichi-deprecatedBtn {
+  height: 80%;
+  width: 70%;
+  border-radius: 5%;
+}
+body
+  main
+  section.cal-Area
+  section.totalize
+  .yoichi-split
+  .yoichi-tiptool
+  .yoichi-deprecatedBtn:active {
+  transform: translateY(1px); /* 向下移動 2px，模擬按下效果 */
+  box-shadow: -1px 0px 5px 1px #61f477;
+}
+body main section.cal-Area section.totalize .yoichi-split .yoichi-generate {
+  flex-basis: 65%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+body
+  main
+  section.cal-Area
+  section.totalize
+  .yoichi-split
+  .yoichi-generate
+  button {
+  height: 80%;
+  width: 80%;
+}
+body main section.presentation-Area {
+  position: relative;
+  border: 3px blue solid;
+  height: 95vh;
+  width: 90vw;
+  left: 2rem;
+  margin-top: 4rem;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto; /* 水平溢出滾動 */
+}
+body main section.presentation-Area .yoichi-order-shown {
+  border: 1px red solid;
+  height: 100%;
+  display: flex;
+  flex-basis: 25%;
+  flex-shrink: 0;
+}
+body main section.presentation-Area .yoichi-order-shown div.yoichi-card {
+  border: 2px green solid;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+body
+  main
+  section.presentation-Area
+  .yoichi-order-shown
+  div.yoichi-card
+  div.yoichi-card-time-number {
+  border: goldenrod 2px solid;
+  flex-basis: 10%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+body
+  main
+  section.presentation-Area
+  .yoichi-order-shown
+  div.yoichi-card
+  div.yoichi-card-time-number
+  div.order-time {
+  width: 50%;
+  height: 100%;
+  border: darkorange 2px solid;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+body
+  main
+  section.presentation-Area
+  .yoichi-order-shown
+  div.yoichi-card
+  div.yoichi-card-time-number
+  div.order-time
+  p {
+  padding: 0;
+  margin: 0;
+}
+body
+  main
+  section.presentation-Area
+  .yoichi-order-shown
+  div.yoichi-card
+  div.yoichi-card-time-number
+  div.order-number {
+  width: 50%;
+  height: 100%;
+  border: steelblue 2px solid;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+body
+  main
+  section.presentation-Area
+  .yoichi-order-shown
+  div.yoichi-card
+  div.yoichi-card-time-number
+  div.order-number
+  p {
+  padding: 0;
+  margin: 0;
+}
+body
+  main
+  section.presentation-Area
+  .yoichi-order-shown
+  div.yoichi-card
+  div.yoichi-card-time-number
+  div.order-number
+  p.with-notation::before {
+  content: "No.";
+}
+body
+  main
+  section.presentation-Area
+  .yoichi-order-shown
+  div.yoichi-card
+  .yoichi-card-order-detail {
+  border: palevioletred 3px solid;
+  height: 10%;
+  width: 100%;
+  display: flex;
+  flex-basis: 75%;
+  flex-direction: column;
+  overflow: auto;
+}
+body
+  main
+  section.presentation-Area
+  .yoichi-order-shown
+  div.yoichi-card
+  .yoichi-card-order-detail
+  .order-detail {
+  height: 10%;
+  display: flex;
+}
+body
+  main
+  section.presentation-Area
+  .yoichi-order-shown
+  div.yoichi-card
+  .yoichi-card-order-detail
+  .order-detail
+  div.order-p-name {
+  border-bottom: black 2px solid;
+  border-right: black 2px solid;
+  flex-basis: 50%;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: large;
+}
+body
+  main
+  section.presentation-Area
+  .yoichi-order-shown
+  div.yoichi-card
+  .yoichi-card-order-detail
+  .order-detail
+  div.order-p-name
+  p {
+  padding: 0;
+  margin: 0;
+}
+body
+  main
+  section.presentation-Area
+  .yoichi-order-shown
+  div.yoichi-card
+  .yoichi-card-order-detail
+  .order-detail
+  div.order-p-number {
+  border-bottom: black 2px solid;
+  text-align: center;
+  flex-basis: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+body
+  main
+  section.presentation-Area
+  .yoichi-order-shown
+  div.yoichi-card
+  .yoichi-card-order-detail
+  .order-detail
+  div.order-p-number
+  p {
+  padding: 0;
+  margin: 0;
+}
+body
+  main
+  section.presentation-Area
+  .yoichi-order-shown
+  div.yoichi-card
+  div.yoichi-card-bottom {
+  border: 3px black solid;
+  flex-basis: 15%;
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+}
+body
+  main
+  section.presentation-Area
+  .yoichi-order-shown
+  div.yoichi-card
+  div.yoichi-card-bottom
+  div.order-total-price {
+  height: 100%;
+  flex-basis: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+body
+  main
+  section.presentation-Area
+  .yoichi-order-shown
+  div.yoichi-card
+  div.yoichi-card-bottom
+  div.order-total-price
+  p {
+  padding: 0;
+  margin: 0;
+}
+body
+  main
+  section.presentation-Area
+  .yoichi-order-shown
+  div.yoichi-card
+  div.yoichi-card-bottom
+  div.order-total-price
+  p::after {
+  content: "元";
+}
+body
+  main
+  section.presentation-Area
+  .yoichi-order-shown
+  div.yoichi-card
+  div.yoichi-card-bottom
+  div.order-buttonMotion {
+  flex-basis: 50%;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  align-items: center;
+}
+body
+  main
+  section.presentation-Area
+  .yoichi-order-shown
+  div.yoichi-card
+  div.yoichi-card-bottom
+  div.order-buttonMotion
+  p {
+  padding: 0;
+  margin: 0;
+}
+body .successSend,
+body .noSend {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  width: -moz-fit-content;
+  width: fit-content;
+}
+body footer {
+  position: relative;
+  display: block;
+  width: -moz-fit-content;
+  width: fit-content;
+  left: 50vw;
+  transform: translate(-50%, 0%);
+}
+
+aside.floating-element {
+  border-radius: 50%;
+  position: fixed;
+  height: 3rem;
+  width: 3rem;
+  font-size: 1.75rem;
+  right: 1rem;
+  top: 50vh;
+  align-items: center;
+  text-align: center;
+}
+aside.floating-element a {
+  text-decoration: none;
+}
+
+.popover-header {
+  text-align: center;
+}
+
+.popover-body {
+  position: relative;
+  width: 10rem;
+  padding: 0;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.popover-body .fulfillOrder {
+  flex-basis: 33%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+  border-radius: 0 0 0 12%;
+  margin-bottom: 1px;
+}
+.popover-body .fulfillOrder button {
+  border-radius: 0 0 0 12%;
+  height: 100%;
+  width: 100%;
+}
+.popover-body .fulfillOrder button:active {
+  transform: translateY(1px); /* 向下移動 1px，模擬按下效果 */
+  box-shadow: 0px 0px 5px 0px #61f477;
+}
+.popover-body .reviseOrder {
+  flex-basis: 33%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+  margin-bottom: 1px;
+}
+.popover-body .reviseOrder button {
+  height: 100%;
+  width: 100%;
+}
+.popover-body .reviseOrder button:active {
+  transform: translateY(1px); /* 向下移動 2px，模擬按下效果 */
+  box-shadow: -1px 0px 5px 1px #61f477;
+}
+.popover-body .paidOrder {
+  flex-basis: 33%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+  border-radius: 0 0 12% 0;
+  margin-bottom: 1px;
+}
+.popover-body .paidOrder button {
+  border-radius: 0 0 12% 0;
+  height: 100%;
+  width: 100%;
+}
+.popover-body .paidOrder button:active {
+  transform: translateY(1px); /* 向下移動 2px，模擬按下效果 */
+  box-shadow: 0px 0px 5px 0px #61f477;
+}
+
+@keyframes opacityTransitions {
+  0% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  } /*# sourceMappingURL=style.css.map */
+}
+main section.show-products {
+  overflow-y: scroll;
+  border: orange 2px solid;
+  margin-top: 1rem;
+  margin-left: 2rem;
+  width: 90vw;
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+main section.show-products .yoichi-p-shows {
+  display: flex;
+  justify-content: space-around;
+  margin: 1rem;
+}
+main section.show-products .yoichi-p-shows div {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+main section.show-products .yoichi-p-shows div p {
+  display: block;
+  height: 1.5rem;
+  margin: 0;
+}
+main section.show-products .yoichi-p-shows .yoichi-p-show-name {
+  flex-basis: 10%;
+  text-align: center;
+}
+main section.show-products .yoichi-p-shows .yoichi-p-show-price {
+  flex-basis: 10%;
+  text-align: center;
+}
+main section.show-products .yoichi-p-shows .yoichi-p-show-edit {
+  flex-basis: 10%;
+  text-align: center;
+}
+main section.show-products .yoichi-p-shows .yoichi-p-show-edit-title {
+  flex-basis: 10%;
+  text-align: center;
+}
+
+aside.floating-element {
+  position: fixed;
+  height: 3rem;
+  width: 3rem;
+  font-size: 1.75rem;
+  right: 1rem;
+  top: 50vh;
+  align-items: center;
+  text-align: center;
+}
+aside.floating-element button {
+  font-family: bold;
+  text-decoration: none;
+}
+
+#yoichi-product-add {
+  display: flex;
+}
+#yoichi-product-add label {
+  flex-basis: 20%;
+}
+#yoichi-product-add input {
+  flex-basis: 30%;
+}
+#yoichi-product-add input[type="text"] {
+  width: 5rem;
+}
+
+#yoichi-product-edit {
+  display: flex;
+  justify-content: space-around;
+}
+
+#yoichi-p-setName {
+  border-bottom: gray solid 2px;
+}
+
+#yoichi-p-setPrice {
+  border-bottom: gray solid 2px;
+}
+
+@keyframes scaleDown {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(0);
+  }
+} /*# sourceMappingURL=styleEdit.css.map */
