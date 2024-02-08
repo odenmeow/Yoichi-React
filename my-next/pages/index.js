@@ -8,9 +8,6 @@ import Link from "next/link";
 import myWorkScript from "../public/app";
 
 export default function Home() {
-  useEffect(() => {
-    myWorkScript(LZString);
-  }, []);
   return (
     <div>
       <Head>
