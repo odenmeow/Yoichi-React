@@ -3,6 +3,7 @@ import Head from "next/head";
 import "bootstrap/dist/css/bootstrap.min.css"; // 引入 Bootstrap CSS
 import Script from "next/script";
 import LZString from "lz-string";
+import { useEffect } from "react";
 import myWorkScript from "../public/app";
 import Link from "next/link";
 
