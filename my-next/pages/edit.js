@@ -5,6 +5,8 @@ import Script from "next/script";
 import { useEffect } from "react";
 // import myScript from "../public/app";
 import "popper.js";
+import Link from "next/link";
+
 import LZString from "lz-string";
 import myEditScript from "../public/edit";
 export default function Edit() {
@@ -16,26 +18,32 @@ export default function Edit() {
     <div>
       <header>
         <nav className="nav nav-pills flex-column flex-sm-row">
-          <a
+          <Link
             className="flex-sm-fill text-sm-center nav-link"
             aria-current="page"
             href="/"
           >
             工作區
-          </a>
-          <a className="flex-sm-fill text-sm-center nav-link" href="./history">
+          </Link>
+          <Link
+            className="flex-sm-fill text-sm-center nav-link"
+            href="./history"
+          >
             歷史紀錄
-          </a>
-          <a className="flex-sm-fill text-sm-center nav-link active" href="#">
+          </Link>
+          <Link
+            className="flex-sm-fill text-sm-center nav-link active"
+            href="#"
+          >
             功能編輯
-          </a>
-          <a
+          </Link>
+          <Link
             className="flex-sm-fill text-sm-center nav-link disabled"
             aria-disabled="true"
             href="#"
           >
             會員專區
-          </a>
+          </Link>
         </nav>
       </header>
       <main>

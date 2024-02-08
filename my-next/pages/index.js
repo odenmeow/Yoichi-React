@@ -4,6 +4,8 @@ import "bootstrap/dist/css/bootstrap.min.css"; // 引入 Bootstrap CSS
 import Script from "next/script";
 import Modal from "react-bootstrap/Modal";
 import LZString from "lz-string";
+import Link from "next/link";
+
 export default function Home() {
   return (
     <div>
@@ -14,26 +16,29 @@ export default function Home() {
       </Head>
       <header>
         <nav className="nav nav-pills flex-column flex-sm-row">
-          <a
+          <Link
             className="flex-sm-fill text-sm-center nav-link active"
             aria-current="page"
             href="#"
           >
             工作區
-          </a>
-          <a className="flex-sm-fill text-sm-center nav-link" href="./history">
+          </Link>
+          <Link
+            className="flex-sm-fill text-sm-center nav-link"
+            href="./history"
+          >
             歷史紀錄
-          </a>
-          <a className="flex-sm-fill text-sm-center nav-link" href="./edit">
+          </Link>
+          <Link className="flex-sm-fill text-sm-center nav-link" href="./edit">
             功能編輯
-          </a>
-          <a
+          </Link>
+          <Link
             className="flex-sm-fill text-sm-center nav-link disabled"
             aria-disabled="true"
             href="#"
           >
             會員專區
-          </a>
+          </Link>
         </nav>
       </header>
       <main>

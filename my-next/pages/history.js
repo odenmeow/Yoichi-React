@@ -5,6 +5,8 @@ import { useEffect } from "react";
 import "popper.js";
 import LZString from "lz-string";
 import myHistoryScript from "../public/history";
+import Link from "next/link";
+
 export default function History() {
   useEffect(() => {
     myHistoryScript(LZString);
@@ -14,26 +16,29 @@ export default function History() {
     <div>
       <header>
         <nav className="nav nav-pills flex-column flex-sm-row">
-          <a
+          <Link
             className="flex-sm-fill text-sm-center nav-link"
             aria-current="page"
             href="/"
           >
             工作區
-          </a>
-          <a className="flex-sm-fill text-sm-center nav-link active" href="#">
+          </Link>
+          <Link
+            className="flex-sm-fill text-sm-center nav-link active"
+            href="#"
+          >
             歷史紀錄
-          </a>
-          <a className="flex-sm-fill text-sm-center nav-link" href="./edit">
+          </Link>
+          <Link className="flex-sm-fill text-sm-center nav-link" href="./edit">
             功能編輯
-          </a>
-          <a
+          </Link>
+          <Link
             className="flex-sm-fill text-sm-center nav-link disabled"
             aria-disabled="true"
             href="#"
           >
             會員專區
-          </a>
+          </Link>
         </nav>
       </header>
       <main>
