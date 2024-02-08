@@ -6,7 +6,7 @@ import LZString from "lz-string";
 import { useEffect } from "react";
 import myWorkScript from "../public/app";
 import Link from "next/link";
-
+import "bootstrap/dist/js/bootstrap.bundle.min.js";
 export default function Home() {
   useEffect(() => {
     myWorkScript(LZString);
