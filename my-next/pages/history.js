@@ -6,7 +6,6 @@ import "popper.js";
 import LZString from "lz-string";
 import myHistoryScript from "../public/history";
 import Link from "next/link";
-import "bootstrap/dist/js/bootstrap.bundle.min.js";
 export default function History() {
   useEffect(() => {
     myHistoryScript(LZString);

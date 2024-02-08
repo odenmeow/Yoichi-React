@@ -6,7 +6,6 @@ import { useEffect } from "react";
 // import myScript from "../public/app";
 import "popper.js";
 import Link from "next/link";
-import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import LZString from "lz-string";
 import myEditScript from "../public/edit";
 export default function Edit() {
