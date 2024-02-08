@@ -7,6 +7,9 @@ import { useEffect } from "react";
 import myWorkScript from "../public/app";
 import Link from "next/link";
 export default function Home() {
+  useEffect(() => {
+    myWorkScript(LZString);
+  }, []);
   return (
     <div>
       <Head>
@@ -110,7 +113,7 @@ export default function Home() {
         crossorigin="anonymous"
         referrerpolicy="no-referrer"
       ></Script>
-      <Script src="/app.js"></Script>
+
       <footer>
         &copy; Made By
         <a
