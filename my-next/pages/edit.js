@@ -10,6 +10,7 @@ import LZString from "lz-string";
 import myEditScript from "../public/edit";
 export default function Edit() {
   useEffect(() => {
+    console.log("所以是?", bootstrap);
     myEditScript(LZString);
   }, []);
 
