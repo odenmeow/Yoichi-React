@@ -1,6 +1,7 @@
 @charset "UTF-8";
 .popover {
   border: 2px solid black;
+  padding: 0;
   /* 其他樣式覆寫 */
 }
 
@@ -628,7 +629,7 @@ aside.floating-element a {
 .popover-body {
   position: relative;
   width: 10rem;
-  padding: 0;
+  padding: 0rem;
   height: 3rem;
   display: flex;
   align-items: center;

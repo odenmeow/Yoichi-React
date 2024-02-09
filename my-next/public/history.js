@@ -297,7 +297,7 @@ const myHistoryScript = (LZString, bootstrap) => {
                 <p>${order.totalPrice}</p>
               </div>
               <div class="order-buttonMotion">
-                <button type="button"  data-bs-custom-class="custom-popover" data-bs-placement="top"  class="yoichi-triplebtn btn btn-lg btn-${btnColor}" data-bs-toggle="popover" data-bs-title="${index}" data-bs-content="生成中...">${btnMsg}</button>
+                <button type="button"  data-bs-trigger="focus"  data-bs-custom-class="custom-popover" data-bs-placement="top"  class="yoichi-triplebtn btn btn-lg btn-${btnColor}" data-bs-toggle="popover" data-bs-title="${index}" data-bs-content="生成中...">${btnMsg}</button>
 
               </div>
             </div>
