@@ -70,7 +70,7 @@ const myWorkScript = (LZString, bootstrap) => {
           }
         });
         // 下面會直接刪除 第i個物件
-        console.log("i=", i);
+        //console.log("i=", i);
         if (i != undefined) {
           PickedProduct.pickedProducts.splice(i, 1);
         }
@@ -474,7 +474,7 @@ const myWorkScript = (LZString, bootstrap) => {
         new Order();
         Order.historyUpdate();
         // else{ 修改ooxx}
-        console.log(Order.orders);
+        //console.log(Order.orders);
         (function clearScreen() {
           let discount = document.querySelector(".yoichi-discountValue");
           discount.innerText = "";
@@ -587,7 +587,7 @@ const myWorkScript = (LZString, bootstrap) => {
     btn.addEventListener("click", (e) => {
       try {
         let header = document.querySelector("header");
-        console.log("滑動中");
+        // console.log("滑動中");
         header.scrollIntoView({
           behavior: "instant",
           block: "start",
@@ -595,7 +595,7 @@ const myWorkScript = (LZString, bootstrap) => {
 
         displayProducts("new");
       } catch (e) {
-        console.log(e, "錯誤");
+        console.log(e, "滑動中這邊錯誤");
       }
     });
   })();
@@ -735,10 +735,10 @@ const myWorkScript = (LZString, bootstrap) => {
             mutation.type === "attributes" &&
             mutation.attributeName === "aria-describedby"
           ) {
-            console.log(
-              "aria-describedby 屬性已變化，值為：",
-              btn.getAttribute("aria-describedby")
-            );
+            // console.log(
+            //   "aria-describedby 屬性已變化，值為：",
+            //   btn.getAttribute("aria-describedby")
+            // );
             // 在這裡執行，null變化也會被偵測，所以要過濾
             let popID = btn.getAttribute("aria-describedby");
             if (popID) {
@@ -764,33 +764,33 @@ const myWorkScript = (LZString, bootstrap) => {
                 `.fulfillOrder.order-${header_num} button`
               );
               paidBtn.addEventListener("click", (e) => {
-                console.log("paidBtn數字是" + header_num);
+                // console.log("paidBtn數字是" + header_num);
                 // 去修改對應編號的 order 狀態為 paid
                 Order.orders[header_num].status = "paid";
                 document
                   .querySelector(`[data-bs-title="${header_num}"]`)
                   .click();
                 Order.historyUpdate(); //保存狀態否則畫面f5刷新就沒了
-                console.log(Order.orders[header_num]);
+                // console.log(Order.orders[header_num]);
                 displayProducts("new"); //編輯到一半付錢就視同放棄修改
 
                 loadOrderPage();
               });
               reviseBtn.addEventListener("click", (e) => {
-                console.log("reviseBtn數字是" + header_num);
+                //console.log("reviseBtn數字是" + header_num);
                 // 去顯示訂單修改畫面出來
                 // 已經付款的 只能廢棄訂單 (跳出提示)
                 displayProducts("revise", header_num);
                 // 應該要自動往上
                 let header = document.querySelector("header");
-                console.log("滑動中");
+                //console.log("滑動中");
                 header.scrollIntoView({
                   behavior: "instant",
                   block: "start",
                 });
               });
               fulfillBtn.addEventListener("click", (e) => {
-                console.log("fulfillBtn數字是" + header_num);
+                // console.log("fulfillBtn數字是" + header_num);
                 // 去修改對應編號的 order 狀態為 fulfill
                 if (Order.orders[header_num].status == "paid") {
                   // 已經付錢，直接修改狀態，然後刷新，讓訂單離場
