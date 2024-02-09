@@ -1,6 +1,5 @@
 import Head from "next/head";
 
-import "bootstrap/dist/css/bootstrap.min.css"; // 引入 Bootstrap CSS
 import Script from "next/script";
 import { useEffect } from "react";
 import style from "../styles/style.module.css";
