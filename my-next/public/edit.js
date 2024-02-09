@@ -1,4 +1,4 @@
-const myEditScript = (LZString) => {
+const myEditScript = (LZString, bootstrap) => {
   class Product {
     static products = [];
     constructor(name, price) {

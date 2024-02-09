@@ -1,4 +1,4 @@
-const myHistoryScript = (LZString) => {
+const myHistoryScript = (LZString, bootstrap) => {
   class HTMLTime {
     static interval;
     static lock = false;

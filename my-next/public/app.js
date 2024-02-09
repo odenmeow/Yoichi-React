@@ -1,4 +1,4 @@
-const myWorkScript = (LZString) => {
+const myWorkScript = (LZString, bootstrap) => {
   class HTMLTime {
     static interval;
     static lock = false;

@@ -8,7 +8,22 @@ import myHistoryScript from "../public/history";
 import Link from "next/link";
 export default function History() {
   useEffect(() => {
-    myHistoryScript(LZString);
+    const script = document.createElement("script");
+    script.src =
+      "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js";
+    script.async = true;
+
+    script.onload = () => {
+      // Bootstrap script has loaded
+      myHistoryScript(LZString, window.bootstrap);
+    };
+
+    document.body.appendChild(script);
+
+    return () => {
+      // Cleanup if necessary
+      document.body.removeChild(script);
+    };
   }, []);
 
   return (

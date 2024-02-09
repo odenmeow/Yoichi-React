@@ -10,8 +10,22 @@ import LZString from "lz-string";
 import myEditScript from "../public/edit";
 export default function Edit() {
   useEffect(() => {
-    console.log("所以是?", bootstrap);
-    myEditScript(LZString);
+    const script = document.createElement("script");
+    script.src =
+      "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js";
+    script.async = true;
+
+    script.onload = () => {
+      // Bootstrap script has loaded
+      myEditScript(LZString, window.bootstrap);
+    };
+
+    document.body.appendChild(script);
+
+    return () => {
+      // Cleanup if necessary
+      document.body.removeChild(script);
+    };
   }, []);
 
   return (
@@ -185,14 +199,6 @@ export default function Edit() {
           +
         </button>
       </aside>
-      <Script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></Script>
-      <Script
-        src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"
-        integrity="sha512-qtX0GLM3qX8rxJN1gyDfcnMFFrKvixfoEOwbBib9VafR5vbChV5LeE5wSI/x+IlCkTY5ZFddFDCCfaVJJNnuKQ=="
-        crossorigin="anonymous"
-        referrerpolicy="no-referrer"
-      ></Script>
-      <Script src=""></Script>
     </div>
   );
 }
