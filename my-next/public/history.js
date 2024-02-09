@@ -7,6 +7,7 @@ const myHistoryScript = (LZString, bootstrap) => {
       let clock = document.querySelector(".yoichi-orderTime");
       let { timeStr, dateStr } = generateTime();
       clock.innerText = timeStr;
+      if (clock == null) return;
     }
     static t_showUp() {
       if (this.lock == false) {

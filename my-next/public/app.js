@@ -6,6 +6,7 @@ const myWorkScript = (LZString, bootstrap) => {
     static showTime() {
       let clock = document.querySelector(".yoichi-orderTime");
       let { timeStr, dateStr } = generateTime();
+      if (clock == null) return;
       clock.innerText = timeStr;
     }
     static t_showUp() {
