@@ -293,11 +293,11 @@ const myWorkScript = (LZString, bootstrap) => {
         deprecatedBtn.addEventListener("click", (e) => {
           // 顯示是否作廢 (防止按錯)
           let confirmed = window.confirm("確定要作廢?");
-          document
-            .querySelectorAll(".popover.custom-popover")
-            .forEach((popover) => {
-              popover.remove();
-            });
+          document.querySelectorAll("button .yoichi-triplebtn").forEach((b) => {
+            if (b.hasAttribute("aria-describedby")) {
+              b.click();
+            }
+          });
           if (confirmed) {
             Order.orders[oid].status = "deprecated";
             Order.historyUpdate();
@@ -476,11 +476,12 @@ const myWorkScript = (LZString, bootstrap) => {
           return; //不做事
         }
         // if找不到 .revise 則新增訂單，否則修改Orders的Order內容即可 !
-        document
-          .querySelectorAll(".popover.custom-popover")
-          .forEach((popover) => {
-            popover.remove();
-          });
+
+        document.querySelectorAll("button .yoichi-triplebtn").forEach((b) => {
+          if (b.hasAttribute("aria-describedby")) {
+            b.click();
+          }
+        });
         new Order();
         Order.historyUpdate();
         // else{ 修改ooxx}
@@ -779,9 +780,11 @@ const myWorkScript = (LZString, bootstrap) => {
                 // 去修改對應編號的 order 狀態為 paid
                 Order.orders[header_num].status = "paid";
                 document
-                  .querySelectorAll(".popover.custom-popover")
-                  .forEach((popover) => {
-                    popover.remove();
+                  .querySelectorAll("button .yoichi-triplebtn")
+                  .forEach((b) => {
+                    if (b.hasAttribute("aria-describedby")) {
+                      b.click();
+                    }
                   });
                 Order.historyUpdate(); //保存狀態否則畫面f5刷新就沒了
                 // console.log(Order.orders[header_num]);
@@ -805,9 +808,11 @@ const myWorkScript = (LZString, bootstrap) => {
                 //   .querySelector(`[data-bs-title="${header_num}"]`)
                 //   .click();
                 document
-                  .querySelectorAll(".popover.custom-popover")
-                  .forEach((popover) => {
-                    popover.remove();
+                  .querySelectorAll("button .yoichi-triplebtn")
+                  .forEach((b) => {
+                    if (b.hasAttribute("aria-describedby")) {
+                      b.click();
+                    }
                   });
               });
               fulfillBtn.addEventListener("click", (e) => {
@@ -841,9 +846,11 @@ const myWorkScript = (LZString, bootstrap) => {
                   })();
                 }
                 document
-                  .querySelectorAll(".popover.custom-popover")
-                  .forEach((popover) => {
-                    popover.remove();
+                  .querySelectorAll("button .yoichi-triplebtn")
+                  .forEach((b) => {
+                    if (b.hasAttribute("aria-describedby")) {
+                      b.click();
+                    }
                   });
               });
             }

@@ -409,9 +409,11 @@ const myHistoryScript = (LZString, bootstrap) => {
                 //   .querySelector(`[data-bs-title="${header_num}"]`)
                 //   .click();
                 document
-                  .querySelectorAll(".popover.custom-popover")
-                  .forEach((popover) => {
-                    popover.remove();
+                  .querySelectorAll("button .yoichi-triplebtn")
+                  .forEach((b) => {
+                    if (b.hasAttribute("aria-describedby")) {
+                      b.click();
+                    }
                   });
                 Order.historyUpdate(date); //保存狀態否則畫面f5刷新就沒了
                 //console.log(Order.orders[header_num]);
@@ -437,9 +439,11 @@ const myHistoryScript = (LZString, bootstrap) => {
                 //   .querySelector(`[data-bs-title="${header_num}"]`)
                 //   .click();
                 document
-                  .querySelectorAll(".popover.custom-popover")
-                  .forEach((popover) => {
-                    popover.remove();
+                  .querySelectorAll("button .yoichi-triplebtn")
+                  .forEach((b) => {
+                    if (b.hasAttribute("aria-describedby")) {
+                      b.click();
+                    }
                   });
                 Order.historyUpdate(date); //保存狀態否則畫面f5刷新就沒了
                 //console.log(Order.orders[header_num]);
@@ -478,9 +482,11 @@ const myHistoryScript = (LZString, bootstrap) => {
                   })();
                 }
                 document
-                  .querySelectorAll(".popover.custom-popover")
-                  .forEach((popover) => {
-                    popover.remove();
+                  .querySelectorAll("button .yoichi-triplebtn")
+                  .forEach((b) => {
+                    if (b.hasAttribute("aria-describedby")) {
+                      b.click();
+                    }
                   });
               });
             }
