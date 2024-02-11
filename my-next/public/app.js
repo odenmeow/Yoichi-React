@@ -544,6 +544,12 @@ const myWorkScript = (LZString, bootstrap) => {
           return; //不做事
         }
         let oid = document.querySelector(".yoichi-orderNumber").innerText;
+        document.querySelectorAll("button .yoichi-triplebtn").forEach((b) => {
+          if (b.hasAttribute("aria-describedby")) {
+            console.log("被點囉");
+            b.click();
+          }
+        });
         let o = new Order();
         Order.orders.pop();
         Order.orders[oid] = o;
