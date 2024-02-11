@@ -769,8 +769,10 @@ const myWorkScript = (LZString, bootstrap) => {
                 // 去修改對應編號的 order 狀態為 paid
                 Order.orders[header_num].status = "paid";
                 document
-                  .querySelector(`[data-bs-title="${header_num}"]`)
-                  .click();
+                  .querySelectorAll(".popover.custom-popover")
+                  .forEach((popover) => {
+                    popover.click();
+                  });
                 Order.historyUpdate(); //保存狀態否則畫面f5刷新就沒了
                 // console.log(Order.orders[header_num]);
                 displayProducts("new"); //編輯到一半付錢就視同放棄修改
@@ -789,9 +791,14 @@ const myWorkScript = (LZString, bootstrap) => {
                   behavior: "instant",
                   block: "start",
                 });
+                // document
+                //   .querySelector(`[data-bs-title="${header_num}"]`)
+                //   .click();
                 document
-                  .querySelector(`[data-bs-title="${header_num}"]`)
-                  .click();
+                  .querySelectorAll(".popover.custom-popover")
+                  .forEach((popover) => {
+                    popover.click();
+                  });
               });
               fulfillBtn.addEventListener("click", (e) => {
                 // console.log("fulfillBtn數字是" + header_num);
@@ -799,9 +806,14 @@ const myWorkScript = (LZString, bootstrap) => {
                 if (Order.orders[header_num].status == "paid") {
                   // 已經付錢，直接修改狀態，然後刷新，讓訂單離場
                   Order.orders[header_num].status = "fulfilled";
+                  // document
+                  //   .querySelector(`[data-bs-title="${header_num}"]`)
+                  //   .click();
                   document
-                    .querySelector(`[data-bs-title="${header_num}"]`)
-                    .click();
+                    .querySelectorAll(".popover.custom-popover")
+                    .forEach((popover) => {
+                      popover.click();
+                    });
                   Order.historyUpdate(); //保存狀態否則畫面f5刷新就沒了
                   displayProducts("new");
                   loadOrderPage();
