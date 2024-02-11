@@ -833,7 +833,14 @@ const myWorkScript = (LZString, bootstrap) => {
                   // document
                   //   .querySelector(`[data-bs-title="${header_num}"]`)
                   //   .click();
-
+                  document
+                    .querySelectorAll("button.yoichi-triplebtn")
+                    .forEach((b) => {
+                      if (b.hasAttribute("aria-describedby")) {
+                        console.log("被點囉");
+                        b.click();
+                      }
+                    });
                   Order.historyUpdate(); //保存狀態否則畫面f5刷新就沒了
                   displayProducts("new");
                   loadOrderPage();
