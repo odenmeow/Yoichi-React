@@ -789,6 +789,9 @@ const myWorkScript = (LZString, bootstrap) => {
                   behavior: "instant",
                   block: "start",
                 });
+                document
+                  .querySelector(`[data-bs-title="${header_num}"]`)
+                  .click();
               });
               fulfillBtn.addEventListener("click", (e) => {
                 // console.log("fulfillBtn數字是" + header_num);

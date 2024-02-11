@@ -414,6 +414,7 @@ const myHistoryScript = (LZString, bootstrap) => {
 
                 loadOrderPage(date);
               });
+              // 這邊是歷史紀錄，所以中間這個按鈕實際功能為作廢!!!
               reviseBtn.addEventListener("click", (e) => {
                 //console.log("reviseBtn數字是" + header_num);
                 //   // 去顯示訂單修改畫面出來
