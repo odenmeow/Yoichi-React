@@ -783,6 +783,8 @@ const myWorkScript = (LZString, bootstrap) => {
                   .querySelectorAll("button .yoichi-triplebtn")
                   .forEach((b) => {
                     if (b.hasAttribute("aria-describedby")) {
+                      console.log("被點囉");
+
                       b.click();
                     }
                   });
@@ -811,6 +813,8 @@ const myWorkScript = (LZString, bootstrap) => {
                   .querySelectorAll("button .yoichi-triplebtn")
                   .forEach((b) => {
                     if (b.hasAttribute("aria-describedby")) {
+                      console.log("被點囉");
+
                       b.click();
                     }
                   });
@@ -849,6 +853,7 @@ const myWorkScript = (LZString, bootstrap) => {
                   .querySelectorAll("button .yoichi-triplebtn")
                   .forEach((b) => {
                     if (b.hasAttribute("aria-describedby")) {
+                      console.log("被點囉");
                       b.click();
                     }
                   });
