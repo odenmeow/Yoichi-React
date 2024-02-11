@@ -456,11 +456,7 @@ const myHistoryScript = (LZString, bootstrap) => {
                   // document
                   //   .querySelector(`[data-bs-title="${header_num}"]`)
                   //   .click();
-                  document
-                    .querySelectorAll(".popover.custom-popover")
-                    .forEach((popover) => {
-                      popover.remove();
-                    });
+
                   Order.historyUpdate(date); //保存狀態否則畫面f5刷新就沒了
                   // displayProducts("new");
                   loadOrderPage(date);
@@ -481,6 +477,11 @@ const myHistoryScript = (LZString, bootstrap) => {
                       "opacityTransitions 2.1s ease forwards";
                   })();
                 }
+                document
+                  .querySelectorAll(".popover.custom-popover")
+                  .forEach((popover) => {
+                    popover.remove();
+                  });
               });
             }
           }

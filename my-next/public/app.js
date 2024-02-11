@@ -809,11 +809,7 @@ const myWorkScript = (LZString, bootstrap) => {
                   // document
                   //   .querySelector(`[data-bs-title="${header_num}"]`)
                   //   .click();
-                  document
-                    .querySelectorAll(".popover.custom-popover")
-                    .forEach((popover) => {
-                      popover.remove();
-                    });
+
                   Order.historyUpdate(); //保存狀態否則畫面f5刷新就沒了
                   displayProducts("new");
                   loadOrderPage();
@@ -834,6 +830,11 @@ const myWorkScript = (LZString, bootstrap) => {
                       "opacityTransitions 2.1s ease forwards";
                   })();
                 }
+                document
+                  .querySelectorAll(".popover.custom-popover")
+                  .forEach((popover) => {
+                    popover.remove();
+                  });
               });
             }
           }
