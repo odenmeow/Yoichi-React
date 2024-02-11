@@ -771,7 +771,7 @@ const myWorkScript = (LZString, bootstrap) => {
                 document
                   .querySelectorAll(".popover.custom-popover")
                   .forEach((popover) => {
-                    popover.classList.remove("show");
+                    popover.remove();
                   });
                 Order.historyUpdate(); //保存狀態否則畫面f5刷新就沒了
                 // console.log(Order.orders[header_num]);
@@ -797,7 +797,7 @@ const myWorkScript = (LZString, bootstrap) => {
                 document
                   .querySelectorAll(".popover.custom-popover")
                   .forEach((popover) => {
-                    popover.classList.remove("show");
+                    popover.remove();
                   });
               });
               fulfillBtn.addEventListener("click", (e) => {
@@ -812,7 +812,7 @@ const myWorkScript = (LZString, bootstrap) => {
                   document
                     .querySelectorAll(".popover.custom-popover")
                     .forEach((popover) => {
-                      popover.classList.remove("show");
+                      popover.remove();
                     });
                   Order.historyUpdate(); //保存狀態否則畫面f5刷新就沒了
                   displayProducts("new");

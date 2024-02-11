@@ -411,7 +411,7 @@ const myHistoryScript = (LZString, bootstrap) => {
                 document
                   .querySelectorAll(".popover.custom-popover")
                   .forEach((popover) => {
-                    popover.classList.remove("show");
+                    popover.remove();
                   });
                 Order.historyUpdate(date); //保存狀態否則畫面f5刷新就沒了
                 //console.log(Order.orders[header_num]);
@@ -439,7 +439,7 @@ const myHistoryScript = (LZString, bootstrap) => {
                 document
                   .querySelectorAll(".popover.custom-popover")
                   .forEach((popover) => {
-                    popover.classList.remove("show");
+                    popover.remove();
                   });
                 Order.historyUpdate(date); //保存狀態否則畫面f5刷新就沒了
                 //console.log(Order.orders[header_num]);
@@ -459,7 +459,7 @@ const myHistoryScript = (LZString, bootstrap) => {
                   document
                     .querySelectorAll(".popover.custom-popover")
                     .forEach((popover) => {
-                      popover.classList.remove("show");
+                      popover.remove();
                     });
                   Order.historyUpdate(date); //保存狀態否則畫面f5刷新就沒了
                   // displayProducts("new");
