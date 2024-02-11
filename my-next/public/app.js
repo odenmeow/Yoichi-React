@@ -293,7 +293,7 @@ const myWorkScript = (LZString, bootstrap) => {
         deprecatedBtn.addEventListener("click", (e) => {
           // 顯示是否作廢 (防止按錯)
           let confirmed = window.confirm("確定要作廢?");
-          document.querySelectorAll("button .yoichi-triplebtn").forEach((b) => {
+          document.querySelectorAll("button.yoichi-triplebtn").forEach((b) => {
             if (b.hasAttribute("aria-describedby")) {
               b.click();
             }
@@ -477,7 +477,7 @@ const myWorkScript = (LZString, bootstrap) => {
         }
         // if找不到 .revise 則新增訂單，否則修改Orders的Order內容即可 !
 
-        document.querySelectorAll("button .yoichi-triplebtn").forEach((b) => {
+        document.querySelectorAll("button.yoichi-triplebtn").forEach((b) => {
           if (b.hasAttribute("aria-describedby")) {
             b.click();
           }
@@ -780,11 +780,10 @@ const myWorkScript = (LZString, bootstrap) => {
                 // 去修改對應編號的 order 狀態為 paid
                 Order.orders[header_num].status = "paid";
                 document
-                  .querySelectorAll("button .yoichi-triplebtn")
+                  .querySelectorAll("button.yoichi-triplebtn")
                   .forEach((b) => {
                     if (b.hasAttribute("aria-describedby")) {
                       console.log("被點囉");
-
                       b.click();
                     }
                   });
@@ -810,7 +809,7 @@ const myWorkScript = (LZString, bootstrap) => {
                 //   .querySelector(`[data-bs-title="${header_num}"]`)
                 //   .click();
                 document
-                  .querySelectorAll("button .yoichi-triplebtn")
+                  .querySelectorAll("button.yoichi-triplebtn")
                   .forEach((b) => {
                     if (b.hasAttribute("aria-describedby")) {
                       console.log("被點囉");
@@ -850,7 +849,7 @@ const myWorkScript = (LZString, bootstrap) => {
                   })();
                 }
                 document
-                  .querySelectorAll("button .yoichi-triplebtn")
+                  .querySelectorAll("button.yoichi-triplebtn")
                   .forEach((b) => {
                     if (b.hasAttribute("aria-describedby")) {
                       console.log("被點囉");

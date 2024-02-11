@@ -409,7 +409,7 @@ const myHistoryScript = (LZString, bootstrap) => {
                 //   .querySelector(`[data-bs-title="${header_num}"]`)
                 //   .click();
                 document
-                  .querySelectorAll("button .yoichi-triplebtn")
+                  .querySelectorAll("button.yoichi-triplebtn")
                   .forEach((b) => {
                     if (b.hasAttribute("aria-describedby")) {
                       b.click();
@@ -439,7 +439,7 @@ const myHistoryScript = (LZString, bootstrap) => {
                 //   .querySelector(`[data-bs-title="${header_num}"]`)
                 //   .click();
                 document
-                  .querySelectorAll("button .yoichi-triplebtn")
+                  .querySelectorAll("button.yoichi-triplebtn")
                   .forEach((b) => {
                     if (b.hasAttribute("aria-describedby")) {
                       b.click();
@@ -482,7 +482,7 @@ const myHistoryScript = (LZString, bootstrap) => {
                   })();
                 }
                 document
-                  .querySelectorAll("button .yoichi-triplebtn")
+                  .querySelectorAll("button.yoichi-triplebtn")
                   .forEach((b) => {
                     if (b.hasAttribute("aria-describedby")) {
                       b.click();
