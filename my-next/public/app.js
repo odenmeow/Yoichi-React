@@ -344,7 +344,7 @@ const myWorkScript = (LZString, bootstrap) => {
             <div class="yoichi-p-btns">
               
               <div class="y-p-b-4">
-                <button type="button" class="btn btn-warning">清空</button>
+                <button type="button" class="btn btn-warning">空</button>
               </div>
               <div class="y-p-b-3">
                 <button type="button" class="btn btn-info">3</button>
@@ -397,7 +397,7 @@ const myWorkScript = (LZString, bootstrap) => {
               case "3":
                 theNumber += 3;
                 break;
-              case "清空":
+              case "空":
                 theNumber = "";
             }
             if (theNumber <= 0) {
