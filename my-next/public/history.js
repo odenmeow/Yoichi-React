@@ -339,7 +339,7 @@ const myHistoryScript = (LZString, bootstrap) => {
    
           <div class="yoichi-card">
             <div class="yoichi-card-time-number">
-              <div class="order-time"><p>商品名稱</p></div>
+              <div class="order-time"><p>商品</p></div>
               <div class="order-number"><p>總售出</p></div>
             </div>
             <div class="yoichi-card-order-detail">
