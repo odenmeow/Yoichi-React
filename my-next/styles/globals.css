@@ -628,12 +628,15 @@ aside.floating-element a {
 
 .popover-body {
   position: relative;
-  width: 10rem;
+  width: 15rem;
   padding: 0rem;
-  height: 3rem;
+  height: 5rem;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.popover-body button {
+  font-size: large;
 }
 .popover-body .fulfillOrder {
   flex-basis: 33%;
