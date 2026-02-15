@@ -122,6 +122,12 @@ body main section.cal-Area section.totalize .yoichi-calculating {
   display: flex;
   flex-direction: column;
 }
+body main section.cal-Area section.totalize.yoichi-hide-summary .yoichi-calculating {
+  display: none;
+}
+body main section.cal-Area section.totalize.yoichi-hide-summary .yoichi-split {
+  flex: 1;
+}
 body
   main
   section.cal-Area
