@@ -82,7 +82,7 @@ export default function Home() {
                 <p>time</p>
               </div>
               <div className="yoichi-orderNumber">
-                <p>No.110</p>
+                <p>No.0</p>
               </div>
             </div>
             <div className="yoichi-calculating">
