@@ -49,6 +49,9 @@ export default function Home() {
           <Link className="flex-sm-fill text-sm-center nav-link" href="./edit">
             功能編輯
           </Link>
+          <Link className="flex-sm-fill text-sm-center nav-link" href="./github-demo">
+            GitHub Demo
+          </Link>
           <Link
             className="flex-sm-fill text-sm-center nav-link disabled"
             aria-disabled="true"
