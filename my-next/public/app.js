@@ -4,6 +4,50 @@ const myWorkScript = (LZString, bootstrap) => {
   }
   window.__yoichiWorkScriptInitialized = true;
 
+  const safeStorageGet = (key) => {
+    try {
+      return localStorage.getItem(key);
+    } catch (error) {
+      console.warn("無法讀取 localStorage", key, error);
+      return null;
+    }
+  };
+
+  const safeStorageSet = (key, value) => {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch (error) {
+      console.warn("無法寫入 localStorage", key, error);
+      return false;
+    }
+  };
+
+  const safeParseJSON = (raw) => {
+    if (typeof raw !== "string") return null;
+    try {
+      return JSON.parse(raw);
+    } catch (error) {
+      console.warn("JSON parse 失敗", error);
+      return null;
+    }
+  };
+
+  const readWorkSettings = () => {
+    const settings = safeParseJSON(safeStorageGet("yoichi-work-settings"));
+    if (settings == null || typeof settings !== "object") {
+      return { showSummary: true };
+    }
+    return { showSummary: settings.showSummary !== false };
+  };
+
+  const applyWorkSummaryVisibility = () => {
+    const presentationArea = document.querySelector("section.presentation-Area");
+    if (!presentationArea) return;
+    const { showSummary } = readWorkSettings();
+    presentationArea.classList.toggle("yoichi-hide-card-summary", !showSummary);
+  };
+
   class HTMLTime {
     static interval;
     static lock = false;
@@ -39,9 +83,9 @@ const myWorkScript = (LZString, bootstrap) => {
     }
 
     static historyRetrieve() {
-      const data = JSON.parse(localStorage.getItem("yoichiProducts"));
+      const data = safeParseJSON(safeStorageGet("yoichiProducts"));
 
-      if (data == null || data.includes(null)) {
+      if (!Array.isArray(data) || data.length === 0 || data.includes(null)) {
         console.log("沒歷史紀錄或短缺");
 
         console.log("localData=", data);
@@ -63,12 +107,16 @@ const myWorkScript = (LZString, bootstrap) => {
         // 這邊直接改變了所以才不用回傳!
       });
 
+      if (Product.products.length === 0) {
+        return "沒歷史紀錄或短缺";
+      }
+
       if (Product.products.length !== data.length) {
         Product.historyUpdate();
       }
     }
     static historyUpdate() {
-      localStorage.setItem("yoichiProducts", JSON.stringify(Product.products));
+      safeStorageSet("yoichiProducts", JSON.stringify(Product.products));
     }
     static generateDefault() {
       Product.products = [];
@@ -178,23 +226,27 @@ const myWorkScript = (LZString, bootstrap) => {
       let data;
 
       if (date) {
-        data = localStorage.getItem(`yoichiOrders-${date}`);
+        data = safeStorageGet(`yoichiOrders-${date}`);
         if (data == null || data.includes(null)) {
           console.log("沒歷史紀錄或短缺");
           console.log("localData=", data);
           return "沒歷史紀錄或短缺";
         }
-        data = JSON.parse(LZString.decompress(data));
+        data = safeParseJSON(LZString.decompress(data));
       } else {
         let { dateStr } = generateTime();
         //取回要取回當天的紀錄，如果有給date則取回那天的 (做出來但是工作區不會使用，歷史紀錄才會用到)
-        data = localStorage.getItem(`yoichiOrders-${dateStr}`);
+        data = safeStorageGet(`yoichiOrders-${dateStr}`);
         if (data == null || data.includes(null)) {
           console.log("沒歷史紀錄或短缺");
           console.log("localData=", data);
           return "沒歷史紀錄或短缺";
         }
-        data = JSON.parse(LZString.decompress(data));
+        data = safeParseJSON(LZString.decompress(data));
+      }
+
+      if (!Array.isArray(data)) {
+        return "沒歷史紀錄或短缺";
       }
 
       Order.orders = [];
@@ -240,20 +292,26 @@ const myWorkScript = (LZString, bootstrap) => {
       let { dateStr } = generateTime();
       Order.orders = Order.orders.filter((order) => order.orderDate == dateStr);
       let itemKey = `yoichiOrders-${dateStr}`;
-      localStorage.setItem(
+      safeStorageSet(
         itemKey,
         LZString.compress(JSON.stringify(Order.orders))
       );
       // 也添加LZString 壓縮功能!
-      let dateRecords = localStorage.getItem("dateRecords");
+      let dateRecords = safeStorageGet("dateRecords");
       if (dateRecords == null || dateRecords.includes(null)) {
-        let records = JSON.parse(dateRecords);
+        let records = safeParseJSON(dateRecords);
+        if (!Array.isArray(records)) {
+          records = [];
+        }
         // console.log(JSON.parse(JSON.stringify(records)));
         records = [];
         records.push(itemKey);
-        localStorage.setItem("dateRecords", JSON.stringify(records));
+        safeStorageSet("dateRecords", JSON.stringify(records));
       } else {
-        let records = JSON.parse(dateRecords);
+        let records = safeParseJSON(dateRecords);
+        if (!Array.isArray(records)) {
+          records = [];
+        }
         // console.log(JSON.parse(JSON.stringify(records)));
         if (records.length > 180) {
           let shiftData = records.shift();
@@ -265,12 +323,26 @@ const myWorkScript = (LZString, bootstrap) => {
           return;
         }
         records.push(itemKey);
-        localStorage.setItem("dateRecords", JSON.stringify(records));
+        safeStorageSet("dateRecords", JSON.stringify(records));
       }
     }
   }
 
+
+  const setOrderNumberDisplay = (number) => {
+    const orderNumber = document.querySelector(".yoichi-orderNumber");
+    if (!orderNumber) return;
+    orderNumber.innerText = `No.${Number(number) || 0}`;
+  };
+  const getOrderNumberDisplayValue = () => {
+    const orderNumber = document.querySelector(".yoichi-orderNumber");
+    if (!orderNumber) return 0;
+    const matched = String(orderNumber.innerText || "").match(/\d+/);
+    return matched ? Number(matched[0]) : 0;
+  };
+
   Order.historyRetrieve();
+  applyWorkSummaryVisibility();
   console.log(Order.orders);
   // new Order();
   // console.log(Order.orders);
@@ -281,11 +353,9 @@ const myWorkScript = (LZString, bootstrap) => {
     if (info == "new") {
       Product.historyRetrieve(); //依照最新設定顯示
       // 訂單編號要自動推算
-      document.querySelector(".yoichi-orderNumber").innerText =
-        Order.orders.length;
+      setOrderNumberDisplay(Order.orders.length);
       PickedProduct.pickedProducts = [];
-      document.querySelector(".yoichi-orderNumber").innerText =
-        Order.orders.length;
+      setOrderNumberDisplay(Order.orders.length);
       let reviseOrderBtn = document.querySelector(".yoichi-order-send");
       reviseOrderBtn.classList.add("yoichi-order-create");
       reviseOrderBtn.classList.remove("yoichi-order-revise");
@@ -352,7 +422,7 @@ const myWorkScript = (LZString, bootstrap) => {
       })();
 
       // 改訂單編號
-      document.querySelector(".yoichi-orderNumber").innerText = oid;
+      setOrderNumberDisplay(oid);
       HTMLTime.t_vanish();
       document.querySelector(".yoichi-orderTime").innerText =
         Order.orders[oid].orderTime;
@@ -560,8 +630,7 @@ const myWorkScript = (LZString, bootstrap) => {
           }, 100);
         })();
         loadOrderPage();
-        document.querySelector(".yoichi-orderNumber").innerText =
-          Order.orders.length;
+        setOrderNumberDisplay(Order.orders.length);
       } else if (e.target.classList.contains("immutable-order")) {
         // 廢棄要優先 因為同時會有 revise + immutable-order
         console.log("只能廢棄不可修改");
@@ -584,7 +653,7 @@ const myWorkScript = (LZString, bootstrap) => {
           })();
           return; //不做事
         }
-        let oid = document.querySelector(".yoichi-orderNumber").innerText;
+        let oid = getOrderNumberDisplayValue();
         document.querySelectorAll("button.yoichi-triplebtn").forEach((b) => {
           if (b.hasAttribute("aria-describedby")) {
             console.log("被點囉");
@@ -768,7 +837,7 @@ const myWorkScript = (LZString, bootstrap) => {
                 ${products}
               
             </div>
-            <div class="yoichi-card-bottom">
+            <div class="yoichi-card-bottom yoichi-summary-card-bottom">
               <div class="order-total-price">
                 <p>${fulfilledOrdersTotalAmount}</p>
               </div>
