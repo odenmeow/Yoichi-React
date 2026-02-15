@@ -41,7 +41,7 @@ const myWorkScript = (LZString, bootstrap) => {
     static historyRetrieve() {
       const data = JSON.parse(localStorage.getItem("yoichiProducts"));
 
-      if (data == null || data.includes(null)) {
+      if (!Array.isArray(data) || data.length === 0 || data.includes(null)) {
         console.log("沒歷史紀錄或短缺");
 
         console.log("localData=", data);
@@ -62,6 +62,10 @@ const myWorkScript = (LZString, bootstrap) => {
         );
         // 這邊直接改變了所以才不用回傳!
       });
+
+      if (Product.products.length === 0) {
+        return "沒歷史紀錄或短缺";
+      }
 
       if (Product.products.length !== data.length) {
         Product.historyUpdate();
