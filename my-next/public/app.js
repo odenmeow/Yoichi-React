@@ -837,7 +837,7 @@ const myWorkScript = (LZString, bootstrap) => {
                 ${products}
               
             </div>
-            <div class="yoichi-card-bottom">
+            <div class="yoichi-card-bottom yoichi-summary-card-bottom">
               <div class="order-total-price">
                 <p>${fulfilledOrdersTotalAmount}</p>
               </div>
