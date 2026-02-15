@@ -1,9 +1,11 @@
 const myEditScript = (LZString, bootstrap) => {
   class Product {
     static products = [];
-    constructor(name, price) {
+    constructor(name, price, discountQty = 0, discountAmount = 0) {
       this.name = name;
       this.price = price;
+      this.discountQty = discountQty;
+      this.discountAmount = discountAmount;
       Product.products.push(this);
     }
 
@@ -17,24 +19,29 @@ const myEditScript = (LZString, bootstrap) => {
         return "沒歷史紀錄或短缺";
       }
       Product.products = [];
-      data.map(({ name, price }) => {
-        new Product(name, Number(price));
+      data.map(({ name, price, discountQty, discountAmount }) => {
+        new Product(
+          name,
+          Number(price),
+          Number(discountQty) || 0,
+          Number(discountAmount) || 0
+        );
       });
     }
     static historyUpdate() {
       localStorage.setItem("yoichiProducts", JSON.stringify(Product.products));
     }
     static generateDefault() {
-      new Product("一串心", 20);
-      new Product("雞腿串", 60);
-      new Product("豬肉串", 40);
-      new Product("香腸", 40);
-      new Product("蔥肉串", 40);
+      new Product("一串心", 20, 0, 0);
+      new Product("雞腿串", 60, 0, 0);
+      new Product("豬肉串", 40, 0, 0);
+      new Product("香腸", 40, 0, 0);
+      new Product("蔥肉串", 40, 0, 0);
       this.historyUpdate();
     }
   }
   function displayHistoryItems() {
-    Product.products.forEach(({ name, price }, index) => {
+    Product.products.forEach(({ name, price, discountQty, discountAmount }, index) => {
       // 創造前先看有沒有存在目前畫面!
       let checkExist = document.querySelector(`#yoichi-p-show-edit-${index}`);
       if (checkExist) {
@@ -47,6 +54,8 @@ const myEditScript = (LZString, bootstrap) => {
           `</div>`,
           `<div class="yoichi-p-show-price">`,
           `<p>${price}元</p>`,
+          `<p>折扣數量: ${discountQty || 0}</p>`,
+          `<p>折扣金額: ${discountAmount || 0}</p>`,
           `</div>`,
           `<button
         type="button"
@@ -122,12 +131,18 @@ const myEditScript = (LZString, bootstrap) => {
     let productPrice = parentElement.querySelector(
       ".yoichi-p-show-price p"
     ).innerText;
+    let productDiscountQty = Product.products[index].discountQty || 0;
+    let productDiscountAmount = Product.products[index].discountAmount || 0;
 
     document.querySelector("#yoichi-p-edit-setName").value = productName;
     if (productPrice.endsWith("元")) {
       productPrice = productPrice.replace("元", "");
     }
     document.querySelector("#yoichi-p-edit-setPrice").value = productPrice;
+    document.querySelector("#yoichi-p-edit-setDiscountQty").value =
+      productDiscountQty;
+    document.querySelector("#yoichi-p-edit-setDiscountAmount").value =
+      productDiscountAmount;
 
     let modalEdit = document.querySelector("#yoichi-product-edit");
     for (let i = 0; i <= Product.products.length; i++) {
@@ -142,6 +157,10 @@ const myEditScript = (LZString, bootstrap) => {
     btnAdd_save.addEventListener("click", (e) => {
       let nameInput = document.querySelector("#yoichi-p-add-setName");
       let priceInput = document.querySelector("#yoichi-p-add-setPrice");
+      let discountQtyInput = document.querySelector("#yoichi-p-add-setDiscountQty");
+      let discountAmountInput = document.querySelector(
+        "#yoichi-p-add-setDiscountAmount"
+      );
       // appendAlert("成功", "success");
 
       if (Product.products.filter((p) => nameInput.value == p.name).length) {
@@ -152,15 +171,26 @@ const myEditScript = (LZString, bootstrap) => {
 
       // [] 屬於 truthy value!
 
-      if (isNaN(Number(priceInput.value))) {
+      if (
+        isNaN(Number(priceInput.value)) ||
+        isNaN(Number(discountQtyInput.value || 0)) ||
+        isNaN(Number(discountAmountInput.value || 0))
+      ) {
         console.log("非數字");
       } else {
         Product.historyRetrieve();
-        new Product(nameInput.value, Number(priceInput.value));
+        new Product(
+          nameInput.value,
+          Number(priceInput.value),
+          Number(discountQtyInput.value || 0),
+          Number(discountAmountInput.value || 0)
+        );
         // console.log("是數字");
         // console.log(Product.products);
         nameInput.value = "";
         priceInput.value = "";
+        discountQtyInput.value = "";
+        discountAmountInput.value = "";
         Product.historyUpdate();
         displayHistoryItems();
         // 有更新要重新抓資料
@@ -271,13 +301,25 @@ const myEditScript = (LZString, bootstrap) => {
                 let newPrice = document.querySelector(
                   "#yoichi-p-edit-setPrice"
                 ).value;
-                if (isNaN(Number(newPrice))) {
+                let newDiscountQty = document.querySelector(
+                  "#yoichi-p-edit-setDiscountQty"
+                ).value;
+                let newDiscountAmount = document.querySelector(
+                  "#yoichi-p-edit-setDiscountAmount"
+                ).value;
+                if (
+                  isNaN(Number(newPrice)) ||
+                  isNaN(Number(newDiscountQty || 0)) ||
+                  isNaN(Number(newDiscountAmount || 0))
+                ) {
                   console.log("非數字");
                 } else {
                   // 改變暫存products資料完成
                   p.name = newName;
                   console.log("你好 ", p.name, p.price);
                   p.price = Number(newPrice);
+                  p.discountQty = Number(newDiscountQty || 0);
+                  p.discountAmount = Number(newDiscountAmount || 0);
 
                   // 改變畫面
                   console.log(checkExist.parentElement);
@@ -287,6 +329,11 @@ const myEditScript = (LZString, bootstrap) => {
                   checkExist.parentElement.querySelector(
                     ".yoichi-p-show-price p"
                   ).innerText = p.price + "元";
+                  checkExist.parentElement.querySelector(
+                    ".yoichi-p-show-price"
+                  ).innerHTML = `<p>${p.price}元</p><p>折扣數量: ${
+                    p.discountQty || 0
+                  }</p><p>折扣金額: ${p.discountAmount || 0}</p>`;
                 }
               }
               return p;
