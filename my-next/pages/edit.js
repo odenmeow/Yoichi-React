@@ -23,6 +23,7 @@ export default function Edit() {
 
     return () => {
       // Cleanup if necessary
+      window.__yoichiEditScriptInitialized = false;
       document.body.removeChild(script);
     };
   }, []);
@@ -94,6 +95,20 @@ export default function Edit() {
                     id="yoichi-p-add-setPrice"
                     name="yoichi-p-add-setPrice"
                   />
+                  <label htmlFor="yoichi-p-add-setDiscountQty">折扣數量</label>
+                  <input
+                    type="text"
+                    id="yoichi-p-add-setDiscountQty"
+                    name="yoichi-p-add-setDiscountQty"
+                  />
+                  <label htmlFor="yoichi-p-add-setDiscountAmount">
+                    折扣金額
+                  </label>
+                  <input
+                    type="text"
+                    id="yoichi-p-add-setDiscountAmount"
+                    name="yoichi-p-add-setDiscountAmount"
+                  />
                 </form>
               </div>
               <div className="modal-footer">
@@ -149,6 +164,20 @@ export default function Edit() {
                     type="text"
                     id="yoichi-p-edit-setPrice"
                     name="yoichi-p-edit-setPrice"
+                  />
+                  <label htmlFor="yoichi-p-edit-setDiscountQty">折扣數量</label>
+                  <input
+                    type="text"
+                    id="yoichi-p-edit-setDiscountQty"
+                    name="yoichi-p-edit-setDiscountQty"
+                  />
+                  <label htmlFor="yoichi-p-edit-setDiscountAmount">
+                    折扣金額
+                  </label>
+                  <input
+                    type="text"
+                    id="yoichi-p-edit-setDiscountAmount"
+                    name="yoichi-p-edit-setDiscountAmount"
                   />
                 </form>
               </div>

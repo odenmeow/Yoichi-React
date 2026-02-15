@@ -1,9 +1,16 @@
 const myEditScript = (LZString, bootstrap) => {
+  if (window.__yoichiEditScriptInitialized) {
+    return;
+  }
+  window.__yoichiEditScriptInitialized = true;
+
   class Product {
     static products = [];
-    constructor(name, price) {
+    constructor(name, price, discountQty = 0, discountAmount = 0) {
       this.name = name;
       this.price = price;
+      this.discountQty = discountQty;
+      this.discountAmount = discountAmount;
       Product.products.push(this);
     }
 
@@ -17,24 +24,38 @@ const myEditScript = (LZString, bootstrap) => {
         return "沒歷史紀錄或短缺";
       }
       Product.products = [];
-      data.map(({ name, price }) => {
-        new Product(name, Number(price));
+      data.forEach(({ name, price, discountQty, discountAmount }) => {
+        let safeName = String(name || "").trim();
+        let safePrice = Number(price);
+        if (!safeName || !Number.isFinite(safePrice) || safePrice <= 0) {
+          return;
+        }
+        new Product(
+          safeName,
+          safePrice,
+          Number(discountQty) || 0,
+          Number(discountAmount) || 0
+        );
       });
+
+      if (Product.products.length !== data.length) {
+        Product.historyUpdate();
+      }
     }
     static historyUpdate() {
       localStorage.setItem("yoichiProducts", JSON.stringify(Product.products));
     }
     static generateDefault() {
-      new Product("一串心", 20);
-      new Product("雞腿串", 60);
-      new Product("豬肉串", 40);
-      new Product("香腸", 40);
-      new Product("蔥肉串", 40);
+      new Product("一串心", 20, 0, 0);
+      new Product("雞腿串", 60, 0, 0);
+      new Product("豬肉串", 40, 0, 0);
+      new Product("香腸", 40, 0, 0);
+      new Product("蔥肉串", 40, 0, 0);
       this.historyUpdate();
     }
   }
   function displayHistoryItems() {
-    Product.products.forEach(({ name, price }, index) => {
+    Product.products.forEach(({ name, price, discountQty, discountAmount }, index) => {
       // 創造前先看有沒有存在目前畫面!
       let checkExist = document.querySelector(`#yoichi-p-show-edit-${index}`);
       if (checkExist) {
@@ -47,6 +68,8 @@ const myEditScript = (LZString, bootstrap) => {
           `</div>`,
           `<div class="yoichi-p-show-price">`,
           `<p>${price}元</p>`,
+          `<p>折扣數量: ${discountQty || 0}</p>`,
+          `<p>折扣金額: ${discountAmount || 0}</p>`,
           `</div>`,
           `<button
         type="button"
@@ -122,12 +145,18 @@ const myEditScript = (LZString, bootstrap) => {
     let productPrice = parentElement.querySelector(
       ".yoichi-p-show-price p"
     ).innerText;
+    let productDiscountQty = Product.products[index].discountQty || 0;
+    let productDiscountAmount = Product.products[index].discountAmount || 0;
 
     document.querySelector("#yoichi-p-edit-setName").value = productName;
     if (productPrice.endsWith("元")) {
       productPrice = productPrice.replace("元", "");
     }
     document.querySelector("#yoichi-p-edit-setPrice").value = productPrice;
+    document.querySelector("#yoichi-p-edit-setDiscountQty").value =
+      productDiscountQty;
+    document.querySelector("#yoichi-p-edit-setDiscountAmount").value =
+      productDiscountAmount;
 
     let modalEdit = document.querySelector("#yoichi-product-edit");
     for (let i = 0; i <= Product.products.length; i++) {
@@ -142,9 +171,23 @@ const myEditScript = (LZString, bootstrap) => {
     btnAdd_save.addEventListener("click", (e) => {
       let nameInput = document.querySelector("#yoichi-p-add-setName");
       let priceInput = document.querySelector("#yoichi-p-add-setPrice");
+      let discountQtyInput = document.querySelector("#yoichi-p-add-setDiscountQty");
+      let discountAmountInput = document.querySelector(
+        "#yoichi-p-add-setDiscountAmount"
+      );
       // appendAlert("成功", "success");
 
-      if (Product.products.filter((p) => nameInput.value == p.name).length) {
+      let newName = nameInput.value.trim();
+      let newPrice = Number(priceInput.value);
+      let newDiscountQty = Number(discountQtyInput.value || 0);
+      let newDiscountAmount = Number(discountAmountInput.value || 0);
+
+      if (!newName) {
+        alert("商品名稱不可空白");
+        return;
+      }
+
+      if (Product.products.filter((p) => newName == p.name).length) {
         alert("重複商品名稱");
         console.log("重複了");
         return;
@@ -152,15 +195,28 @@ const myEditScript = (LZString, bootstrap) => {
 
       // [] 屬於 truthy value!
 
-      if (isNaN(Number(priceInput.value))) {
+      if (
+        !Number.isFinite(newPrice) ||
+        newPrice <= 0 ||
+        !Number.isFinite(newDiscountQty) ||
+        !Number.isFinite(newDiscountAmount)
+      ) {
         console.log("非數字");
+        alert("請輸入正確金額（售價需大於0）");
       } else {
         Product.historyRetrieve();
-        new Product(nameInput.value, Number(priceInput.value));
+        new Product(
+          newName,
+          newPrice,
+          Math.max(0, newDiscountQty),
+          Math.max(0, newDiscountAmount)
+        );
         // console.log("是數字");
         // console.log(Product.products);
         nameInput.value = "";
         priceInput.value = "";
+        discountQtyInput.value = "";
+        discountAmountInput.value = "";
         Product.historyUpdate();
         displayHistoryItems();
         // 有更新要重新抓資料
@@ -266,18 +322,50 @@ const myEditScript = (LZString, bootstrap) => {
                 );
                 let newName = document.querySelector(
                   "#yoichi-p-edit-setName"
-                ).value;
+                ).value.trim();
 
                 let newPrice = document.querySelector(
                   "#yoichi-p-edit-setPrice"
                 ).value;
-                if (isNaN(Number(newPrice))) {
+                let newDiscountQty = document.querySelector(
+                  "#yoichi-p-edit-setDiscountQty"
+                ).value;
+                let newDiscountAmount = document.querySelector(
+                  "#yoichi-p-edit-setDiscountAmount"
+                ).value;
+                if (!newName) {
+                  alert("商品名稱不可空白");
+                  return p;
+                }
+
+                if (
+                  Product.products.some(
+                    (product, pIndex) =>
+                      pIndex !== index && product.name == newName
+                  )
+                ) {
+                  alert("重複商品名稱");
+                  return p;
+                }
+
+                if (
+                  !Number.isFinite(Number(newPrice)) ||
+                  Number(newPrice) <= 0 ||
+                  !Number.isFinite(Number(newDiscountQty || 0)) ||
+                  !Number.isFinite(Number(newDiscountAmount || 0))
+                ) {
                   console.log("非數字");
+                  alert("請輸入正確金額（售價需大於0）");
                 } else {
                   // 改變暫存products資料完成
                   p.name = newName;
                   console.log("你好 ", p.name, p.price);
                   p.price = Number(newPrice);
+                  p.discountQty = Math.max(0, Number(newDiscountQty || 0));
+                  p.discountAmount = Math.max(
+                    0,
+                    Number(newDiscountAmount || 0)
+                  );
 
                   // 改變畫面
                   console.log(checkExist.parentElement);
@@ -287,6 +375,11 @@ const myEditScript = (LZString, bootstrap) => {
                   checkExist.parentElement.querySelector(
                     ".yoichi-p-show-price p"
                   ).innerText = p.price + "元";
+                  checkExist.parentElement.querySelector(
+                    ".yoichi-p-show-price"
+                  ).innerHTML = `<p>${p.price}元</p><p>折扣數量: ${
+                    p.discountQty || 0
+                  }</p><p>折扣金額: ${p.discountAmount || 0}</p>`;
                 }
               }
               return p;
