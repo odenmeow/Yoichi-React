@@ -17,7 +17,7 @@ const myEditScript = (LZString, bootstrap) => {
     static historyRetrieve() {
       const data = JSON.parse(localStorage.getItem("yoichiProducts"));
 
-      if (data == null || data.includes(null)) {
+      if (!Array.isArray(data) || data.length === 0 || data.includes(null)) {
         console.log("沒歷史紀錄或短缺");
 
         console.log("localData=", data);
@@ -38,6 +38,10 @@ const myEditScript = (LZString, bootstrap) => {
         );
       });
 
+      if (Product.products.length === 0) {
+        return "沒歷史紀錄或短缺";
+      }
+
       if (Product.products.length !== data.length) {
         Product.historyUpdate();
       }
@@ -46,12 +50,13 @@ const myEditScript = (LZString, bootstrap) => {
       localStorage.setItem("yoichiProducts", JSON.stringify(Product.products));
     }
     static generateDefault() {
+      Product.products = [];
       new Product("一串心", 20, 0, 0);
       new Product("雞腿串", 60, 0, 0);
       new Product("豬肉串", 40, 0, 0);
       new Product("香腸", 40, 0, 0);
       new Product("蔥肉串", 40, 0, 0);
-      this.historyUpdate();
+      Product.historyUpdate();
     }
   }
   function displayHistoryItems() {
@@ -92,29 +97,10 @@ const myEditScript = (LZString, bootstrap) => {
   // new Product("蔥肉串", 35);
   // new Product("雞肉串", 50);
   // Product.historyUpdate(); //不能單獨直接 否則會把舊資料先清空!
-  class Visit {
-    constructor(first) {
-      this.first = first;
-    }
-    static historyRetrieve() {
-      let data = JSON.parse(localStorage.getItem("visited"));
-      console.log(data, "(true=已訪問過)");
-      if (!data) {
-        this.historyUpdate(); // 沒訪問過 visited=null
-      } else {
-        Product.historyRetrieve();
-      }
-    }
-    static historyUpdate() {
-      //  if not get a visit log
-      //  generate default Products && visit log =true
-      let data = JSON.stringify(new Visit(true));
-      Product.generateDefault();
-      localStorage.setItem("visited", data);
-    }
+  if (Product.historyRetrieve() === "沒歷史紀錄或短缺") {
+    Product.generateDefault();
+    Product.historyRetrieve();
   }
-  Visit.historyRetrieve();
-  // Product.historyRetrieve(); 併入Visit.historyRetrieve了
   // Step1  Display the history items on user's screen.
   // 剛連線，初始畫面透過localStorage查找歷史資料、去建立html顯示畫面出來
   displayHistoryItems();
@@ -238,7 +224,7 @@ const myEditScript = (LZString, bootstrap) => {
     console.log("執行一次");
     btnDelete.addEventListener("click", (e) => {
       let modalEdit = document.querySelector("#yoichi-product-edit");
-      modalEdit.classList.forEach((c) => {
+      Array.from(modalEdit.classList).forEach((c) => {
         if (c.includes(`now-edit-product-`)) {
           // console.log("c是", c);
           let numberPart = c.match(/\d+/); //  /表示開始正則跟結束正則
@@ -298,7 +284,7 @@ const myEditScript = (LZString, bootstrap) => {
     btnSave.addEventListener("click", (e) => {
       let modalEdit = document.querySelector("#yoichi-product-edit");
 
-      modalEdit.classList.forEach((c) => {
+      Array.from(modalEdit.classList).forEach((c) => {
         if (c.includes(`now-edit-product-`)) {
           // console.log("c是", c);
           let numberPart = c.match(/\d+/); //  /表示開始正則跟結束正則

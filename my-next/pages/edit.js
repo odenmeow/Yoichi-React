@@ -9,20 +9,28 @@ import LZString from "lz-string";
 import myEditScript from "../public/edit";
 export default function Edit() {
   useEffect(() => {
+    const bootstrapFallback = { Popover: class {} };
+    let initialized = false;
+    const initializePage = () => {
+      if (initialized) return;
+      initialized = true;
+      myEditScript(LZString, window.bootstrap || bootstrapFallback);
+    };
+
     const script = document.createElement("script");
     script.src =
       "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js";
     script.async = true;
+    script.onload = initializePage;
+    script.onerror = initializePage;
 
-    script.onload = () => {
-      // Bootstrap script has loaded
-      myEditScript(LZString, window.bootstrap);
-    };
+    const fallbackTimer = setTimeout(initializePage, 1500);
 
     document.body.appendChild(script);
 
     return () => {
       // Cleanup if necessary
+      clearTimeout(fallbackTimer);
       window.__yoichiEditScriptInitialized = false;
       document.body.removeChild(script);
     };
