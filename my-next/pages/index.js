@@ -7,20 +7,28 @@ import myWorkScript from "../public/app";
 import Link from "next/link";
 export default function Home() {
   useEffect(() => {
+    const bootstrapFallback = { Popover: class {} };
+    let initialized = false;
+    const initializePage = () => {
+      if (initialized) return;
+      initialized = true;
+      myWorkScript(LZString, window.bootstrap || bootstrapFallback);
+    };
+
     const script = document.createElement("script");
     script.src =
       "https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js";
     script.async = true;
+    script.onload = initializePage;
+    script.onerror = initializePage;
 
-    script.onload = () => {
-      // Bootstrap script has loaded
-      myWorkScript(LZString, window.bootstrap);
-    };
+    const fallbackTimer = setTimeout(initializePage, 1500);
 
     document.body.appendChild(script);
 
     return () => {
       // Cleanup if necessary
+      clearTimeout(fallbackTimer);
       window.__yoichiWorkScriptInitialized = false;
       document.body.removeChild(script);
     };
