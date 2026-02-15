@@ -1,4 +1,9 @@
 const myHistoryScript = (LZString, bootstrap) => {
+  if (window.__yoichiHistoryScriptInitialized) {
+    return;
+  }
+  window.__yoichiHistoryScriptInitialized = true;
+
   class HTMLTime {
     static interval;
     static lock = false;
@@ -25,9 +30,11 @@ const myHistoryScript = (LZString, bootstrap) => {
 
   class Product {
     static products = [];
-    constructor(name, price) {
+    constructor(name, price, discountQty = 0, discountAmount = 0) {
       this.name = name;
       this.price = price;
+      this.discountQty = discountQty;
+      this.discountAmount = discountAmount;
       Product.products.push(this);
     }
 
@@ -41,14 +48,41 @@ const myHistoryScript = (LZString, bootstrap) => {
         return "沒歷史紀錄或短缺";
       }
       Product.products = [];
-      data.map(({ name, price }) => {
-        new Product(name, Number(price));
+      data.forEach(({ name, price, discountQty, discountAmount }) => {
+        let safeName = String(name || "").trim();
+        let safePrice = Number(price);
+        if (!safeName || !Number.isFinite(safePrice) || safePrice <= 0) {
+          return;
+        }
+        new Product(
+          safeName,
+          safePrice,
+          Number(discountQty) || 0,
+          Number(discountAmount) || 0
+        );
         // 這邊直接改變了所以才不用回傳!
       });
+
+      if (Product.products.length !== data.length) {
+        Product.historyUpdate();
+      }
     }
     static historyUpdate() {
       localStorage.setItem("yoichiProducts", JSON.stringify(Product.products));
     }
+    static generateDefault() {
+      Product.products = [];
+      new Product("一串心", 20, 0, 0);
+      new Product("雞腿串", 60, 0, 0);
+      new Product("豬肉串", 40, 0, 0);
+      new Product("香腸", 40, 0, 0);
+      new Product("蔥肉串", 40, 0, 0);
+      Product.historyUpdate();
+    }
+  }
+  if (Product.historyRetrieve() === "沒歷史紀錄或短缺") {
+    Product.generateDefault();
+    Product.historyRetrieve();
   }
 
   class PickedProduct {
@@ -90,6 +124,16 @@ const myHistoryScript = (LZString, bootstrap) => {
         PickedProduct.pickedProducts.push(this);
     }
   }
+  function calculateDiscountForProduct(product, pickedNumber) {
+    let picked = Number(pickedNumber) || 0;
+    let discountQty = Number(product.discountQty) || 0;
+    let discountAmount = Number(product.discountAmount) || 0;
+    if (discountQty <= 0 || discountAmount <= 0 || picked < discountQty) {
+      return 0;
+    }
+    return Math.floor(picked / discountQty) * discountAmount;
+  }
+
   class Order {
     static orders = [];
     // 生成訂單按鈕 按下去之後會把PickedProduct.pickedProducts=[] 清空 !
@@ -115,22 +159,17 @@ const myHistoryScript = (LZString, bootstrap) => {
     }
     counting() {
       let total = 0;
-      // 不想改變、只想做事
       this.productsLog.map((product) => {
         let seletedProduct = this.details.find(
           (p) => product.name == p.pickedName
         );
-        // 如果有東西自然會是 [] = truthy 如沒 則undefined =falsy
         if (seletedProduct) {
-          total += seletedProduct.pickedNumber * product.price;
+          let pickedNumber = Number(seletedProduct.pickedNumber) || 0;
+          let lineSubTotal = pickedNumber * product.price;
+          let lineDiscount = calculateDiscountForProduct(product, pickedNumber);
+          total += Math.max(0, lineSubTotal - lineDiscount);
         }
       });
-      let discount = document.querySelector(".yoichi-discountValue");
-      try {
-        total -= Number(discount.innerText);
-      } catch (e) {
-        alert("不可輸入數字以外");
-      }
       return total;
     }
     // 只有當需要讀取歷史紀錄才改變物件的static 內容，不用擔心一般訂單
@@ -173,8 +212,13 @@ const myHistoryScript = (LZString, bootstrap) => {
           Product.products = []; //前後都要清空 ， 我只是做map 創新物件。
           PickedProduct.pickedProducts = [];
           //  如果displayProducts有需求 則使用讀取後的Order.orders內的資訊去查詢才正確!
-          productsLog = productsLog.map(({ name, price }) => {
-            return new Product(name, price);
+          productsLog = productsLog.map(({ name, price, discountQty, discountAmount }) => {
+            return new Product(
+              name,
+              Number(price),
+              Number(discountQty) || 0,
+              Number(discountAmount) || 0
+            );
           });
           details = details.map(({ pickedName, pickedNumber }) => {
             return new PickedProduct(pickedName, pickedNumber);

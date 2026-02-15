@@ -23,6 +23,7 @@ export default function Edit() {
 
     return () => {
       // Cleanup if necessary
+      window.__yoichiEditScriptInitialized = false;
       document.body.removeChild(script);
     };
   }, []);
@@ -94,6 +95,20 @@ export default function Edit() {
                     id="yoichi-p-add-setPrice"
                     name="yoichi-p-add-setPrice"
                   />
+                  <label htmlFor="yoichi-p-add-setDiscountQty">折扣數量</label>
+                  <input
+                    type="text"
+                    id="yoichi-p-add-setDiscountQty"
+                    name="yoichi-p-add-setDiscountQty"
+                  />
+                  <label htmlFor="yoichi-p-add-setDiscountAmount">
+                    折扣金額
+                  </label>
+                  <input
+                    type="text"
+                    id="yoichi-p-add-setDiscountAmount"
+                    name="yoichi-p-add-setDiscountAmount"
+                  />
                 </form>
               </div>
               <div className="modal-footer">
@@ -150,6 +165,20 @@ export default function Edit() {
                     id="yoichi-p-edit-setPrice"
                     name="yoichi-p-edit-setPrice"
                   />
+                  <label htmlFor="yoichi-p-edit-setDiscountQty">折扣數量</label>
+                  <input
+                    type="text"
+                    id="yoichi-p-edit-setDiscountQty"
+                    name="yoichi-p-edit-setDiscountQty"
+                  />
+                  <label htmlFor="yoichi-p-edit-setDiscountAmount">
+                    折扣金額
+                  </label>
+                  <input
+                    type="text"
+                    id="yoichi-p-edit-setDiscountAmount"
+                    name="yoichi-p-edit-setDiscountAmount"
+                  />
                 </form>
               </div>
               <div className="modal-footer">
@@ -181,9 +210,19 @@ export default function Edit() {
           </div>
         </div>
         <section className="show-products">
+          <div className="yoichi-theme-switcher" role="group" aria-label="UI風格切換">
+            <button type="button" className="btn btn-outline-primary yoichi-theme-btn" data-theme="classic">
+              經典
+            </button>
+            <button type="button" className="btn btn-outline-secondary yoichi-theme-btn" data-theme="soft">
+              柔和
+            </button>
+            <button type="button" className="btn btn-outline-dark yoichi-theme-btn" data-theme="contrast">
+              高對比
+            </button>
+          </div>
           <div className="yoichi-p-shows">
-            <div className="yoichi-p-show-name">產品名稱</div>
-            <div className="yoichi-p-show-price">價格</div>
+            <div className="yoichi-p-show-name">商品資料（4列）</div>
             <div className="yoichi-p-show-edit-title"></div>
           </div>
         </section>

@@ -21,6 +21,7 @@ export default function Home() {
 
     return () => {
       // Cleanup if necessary
+      window.__yoichiWorkScriptInitialized = false;
       document.body.removeChild(script);
     };
   }, []);
