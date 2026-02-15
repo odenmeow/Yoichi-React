@@ -210,9 +210,19 @@ export default function Edit() {
           </div>
         </div>
         <section className="show-products">
+          <div className="yoichi-theme-switcher" role="group" aria-label="UI風格切換">
+            <button type="button" className="btn btn-outline-primary yoichi-theme-btn" data-theme="classic">
+              經典
+            </button>
+            <button type="button" className="btn btn-outline-secondary yoichi-theme-btn" data-theme="soft">
+              柔和
+            </button>
+            <button type="button" className="btn btn-outline-dark yoichi-theme-btn" data-theme="contrast">
+              高對比
+            </button>
+          </div>
           <div className="yoichi-p-shows">
-            <div className="yoichi-p-show-name">產品名稱</div>
-            <div className="yoichi-p-show-price">價格</div>
+            <div className="yoichi-p-show-name">商品資料（4列）</div>
             <div className="yoichi-p-show-edit-title"></div>
           </div>
         </section>
