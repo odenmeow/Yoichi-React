@@ -4,6 +4,27 @@ const myEditScript = (LZString, bootstrap) => {
   }
   window.__yoichiEditScriptInitialized = true;
 
+  const safeForEach = (collection, callback) => {
+    Array.prototype.forEach.call(collection || [], callback);
+  };
+  const safeStorageGet = (key) => {
+    try {
+      return localStorage.getItem(key);
+    } catch (error) {
+      console.warn("無法讀取 localStorage", key, error);
+      return null;
+    }
+  };
+  const safeStorageSet = (key, value) => {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch (error) {
+      console.warn("無法寫入 localStorage", key, error);
+      return false;
+    }
+  };
+
   class Product {
     static products = [];
     constructor(name, price, discountQty = 0, discountAmount = 0) {
@@ -15,16 +36,16 @@ const myEditScript = (LZString, bootstrap) => {
     }
 
     static historyRetrieve() {
-      const data = JSON.parse(localStorage.getItem("yoichiProducts"));
+      const data = JSON.parse(safeStorageGet("yoichiProducts"));
 
-      if (data == null || data.includes(null)) {
+      if (!Array.isArray(data) || data.length === 0 || data.includes(null)) {
         console.log("沒歷史紀錄或短缺");
 
         console.log("localData=", data);
         return "沒歷史紀錄或短缺";
       }
       Product.products = [];
-      data.forEach(({ name, price, discountQty, discountAmount }) => {
+      safeForEach(data, ({ name, price, discountQty, discountAmount }) => {
         let safeName = String(name || "").trim();
         let safePrice = Number(price);
         if (!safeName || !Number.isFinite(safePrice) || safePrice <= 0) {
@@ -38,24 +59,29 @@ const myEditScript = (LZString, bootstrap) => {
         );
       });
 
+      if (Product.products.length === 0) {
+        return "沒歷史紀錄或短缺";
+      }
+
       if (Product.products.length !== data.length) {
         Product.historyUpdate();
       }
     }
     static historyUpdate() {
-      localStorage.setItem("yoichiProducts", JSON.stringify(Product.products));
+      safeStorageSet("yoichiProducts", JSON.stringify(Product.products));
     }
     static generateDefault() {
+      Product.products = [];
       new Product("一串心", 20, 0, 0);
       new Product("雞腿串", 60, 0, 0);
       new Product("豬肉串", 40, 0, 0);
       new Product("香腸", 40, 0, 0);
       new Product("蔥肉串", 40, 0, 0);
-      this.historyUpdate();
+      Product.historyUpdate();
     }
   }
   function displayHistoryItems() {
-    Product.products.forEach(({ name, price, discountQty, discountAmount }, index) => {
+    safeForEach(Product.products, ({ name, price, discountQty, discountAmount }, index) => {
       // 創造前先看有沒有存在目前畫面!
       let checkExist = document.querySelector(`#yoichi-p-show-edit-${index}`);
       if (checkExist) {
@@ -92,29 +118,10 @@ const myEditScript = (LZString, bootstrap) => {
   // new Product("蔥肉串", 35);
   // new Product("雞肉串", 50);
   // Product.historyUpdate(); //不能單獨直接 否則會把舊資料先清空!
-  class Visit {
-    constructor(first) {
-      this.first = first;
-    }
-    static historyRetrieve() {
-      let data = JSON.parse(localStorage.getItem("visited"));
-      console.log(data, "(true=已訪問過)");
-      if (!data) {
-        this.historyUpdate(); // 沒訪問過 visited=null
-      } else {
-        Product.historyRetrieve();
-      }
-    }
-    static historyUpdate() {
-      //  if not get a visit log
-      //  generate default Products && visit log =true
-      let data = JSON.stringify(new Visit(true));
-      Product.generateDefault();
-      localStorage.setItem("visited", data);
-    }
+  if (Product.historyRetrieve() === "沒歷史紀錄或短缺") {
+    Product.generateDefault();
+    Product.historyRetrieve();
   }
-  Visit.historyRetrieve();
-  // Product.historyRetrieve(); 併入Visit.historyRetrieve了
   // Step1  Display the history items on user's screen.
   // 剛連線，初始畫面透過localStorage查找歷史資料、去建立html顯示畫面出來
   displayHistoryItems();
@@ -123,7 +130,7 @@ const myEditScript = (LZString, bootstrap) => {
   // 內含一小function
   (function btnEditAppendFunctions() {
     let btnEdits = document.querySelectorAll(".yoichi-p-show-edit");
-    btnEdits.forEach((btn) => {
+    safeForEach(btnEdits, (btn) => {
       btn.addEventListener("click", (e) => {
         let parentElement = e.target.parentElement;
         // 跟sync 合併使用
@@ -217,7 +224,7 @@ const myEditScript = (LZString, bootstrap) => {
         // 有更新要重新抓資料
         // 編輯按鈕要附加功能上去
         let btnEdits = document.querySelectorAll(".yoichi-p-show-edit");
-        btnEdits.forEach((btn, i) => {
+        safeForEach(btnEdits, (btn, i) => {
           if (i == Product.products.length - 1) {
             btn.addEventListener("click", (e) => {
               let parentElement = e.target.parentElement;
@@ -238,7 +245,7 @@ const myEditScript = (LZString, bootstrap) => {
     console.log("執行一次");
     btnDelete.addEventListener("click", (e) => {
       let modalEdit = document.querySelector("#yoichi-product-edit");
-      modalEdit.classList.forEach((c) => {
+      safeForEach(Array.from(modalEdit.classList), (c) => {
         if (c.includes(`now-edit-product-`)) {
           // console.log("c是", c);
           let numberPart = c.match(/\d+/); //  /表示開始正則跟結束正則
@@ -267,7 +274,7 @@ const myEditScript = (LZString, bootstrap) => {
                         ".yoichi-p-show-edit"
                       );
                       console.log("正在改編號");
-                      displayAreaDiv.forEach((btn, index) => {
+                      safeForEach(displayAreaDiv, (btn, index) => {
                         console.log(btn, index);
                         btn.id = `yoichi-p-show-edit-${index}`;
                       });
@@ -298,7 +305,7 @@ const myEditScript = (LZString, bootstrap) => {
     btnSave.addEventListener("click", (e) => {
       let modalEdit = document.querySelector("#yoichi-product-edit");
 
-      modalEdit.classList.forEach((c) => {
+      safeForEach(Array.from(modalEdit.classList), (c) => {
         if (c.includes(`now-edit-product-`)) {
           // console.log("c是", c);
           let numberPart = c.match(/\d+/); //  /表示開始正則跟結束正則
@@ -396,18 +403,18 @@ const myEditScript = (LZString, bootstrap) => {
     const themeKey = "yoichi-edit-theme";
     const themes = ["classic", "soft", "contrast"];
     const applyTheme = (theme) => {
-      themes.forEach((t) => container.classList.remove(`theme-${t}`));
+      safeForEach(themes, (t) => container.classList.remove(`theme-${t}`));
       container.classList.add(`theme-${theme}`);
     };
 
-    const savedTheme = localStorage.getItem(themeKey);
+    const savedTheme = safeStorageGet(themeKey);
     applyTheme(themes.includes(savedTheme) ? savedTheme : "classic");
 
-    document.querySelectorAll(".yoichi-theme-btn").forEach((btn) => {
+    safeForEach(document.querySelectorAll(".yoichi-theme-btn"), (btn) => {
       btn.addEventListener("click", () => {
         const theme = btn.dataset.theme;
         if (!themes.includes(theme)) return;
-        localStorage.setItem(themeKey, theme);
+        safeStorageSet(themeKey, theme);
         applyTheme(theme);
       });
     });
