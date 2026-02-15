@@ -122,6 +122,10 @@ body main section.cal-Area section.totalize .yoichi-calculating {
   display: flex;
   flex-direction: column;
 }
+body main section.presentation-Area.yoichi-hide-card-summary .yoichi-card-bottom .order-total-price {
+  opacity: 0;
+  pointer-events: none;
+}
 body
   main
   section.cal-Area
