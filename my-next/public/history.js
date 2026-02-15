@@ -1,4 +1,9 @@
 const myHistoryScript = (LZString, bootstrap) => {
+  if (window.__yoichiHistoryScriptInitialized) {
+    return;
+  }
+  window.__yoichiHistoryScriptInitialized = true;
+
   class HTMLTime {
     static interval;
     static lock = false;
@@ -43,15 +48,24 @@ const myHistoryScript = (LZString, bootstrap) => {
         return "沒歷史紀錄或短缺";
       }
       Product.products = [];
-      data.map(({ name, price, discountQty, discountAmount }) => {
+      data.forEach(({ name, price, discountQty, discountAmount }) => {
+        let safeName = String(name || "").trim();
+        let safePrice = Number(price);
+        if (!safeName || !Number.isFinite(safePrice) || safePrice <= 0) {
+          return;
+        }
         new Product(
-          name,
-          Number(price),
+          safeName,
+          safePrice,
           Number(discountQty) || 0,
           Number(discountAmount) || 0
         );
         // 這邊直接改變了所以才不用回傳!
       });
+
+      if (Product.products.length !== data.length) {
+        Product.historyUpdate();
+      }
     }
     static historyUpdate() {
       localStorage.setItem("yoichiProducts", JSON.stringify(Product.products));

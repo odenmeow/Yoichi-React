@@ -21,6 +21,7 @@ export default function History() {
 
     return () => {
       // Cleanup if necessary
+      window.__yoichiHistoryScriptInitialized = false;
       document.body.removeChild(script);
     };
   }, []);

@@ -1,4 +1,9 @@
 const myEditScript = (LZString, bootstrap) => {
+  if (window.__yoichiEditScriptInitialized) {
+    return;
+  }
+  window.__yoichiEditScriptInitialized = true;
+
   class Product {
     static products = [];
     constructor(name, price, discountQty = 0, discountAmount = 0) {
@@ -19,14 +24,23 @@ const myEditScript = (LZString, bootstrap) => {
         return "沒歷史紀錄或短缺";
       }
       Product.products = [];
-      data.map(({ name, price, discountQty, discountAmount }) => {
+      data.forEach(({ name, price, discountQty, discountAmount }) => {
+        let safeName = String(name || "").trim();
+        let safePrice = Number(price);
+        if (!safeName || !Number.isFinite(safePrice) || safePrice <= 0) {
+          return;
+        }
         new Product(
-          name,
-          Number(price),
+          safeName,
+          safePrice,
           Number(discountQty) || 0,
           Number(discountAmount) || 0
         );
       });
+
+      if (Product.products.length !== data.length) {
+        Product.historyUpdate();
+      }
     }
     static historyUpdate() {
       localStorage.setItem("yoichiProducts", JSON.stringify(Product.products));
@@ -163,7 +177,17 @@ const myEditScript = (LZString, bootstrap) => {
       );
       // appendAlert("成功", "success");
 
-      if (Product.products.filter((p) => nameInput.value == p.name).length) {
+      let newName = nameInput.value.trim();
+      let newPrice = Number(priceInput.value);
+      let newDiscountQty = Number(discountQtyInput.value || 0);
+      let newDiscountAmount = Number(discountAmountInput.value || 0);
+
+      if (!newName) {
+        alert("商品名稱不可空白");
+        return;
+      }
+
+      if (Product.products.filter((p) => newName == p.name).length) {
         alert("重複商品名稱");
         console.log("重複了");
         return;
@@ -172,18 +196,20 @@ const myEditScript = (LZString, bootstrap) => {
       // [] 屬於 truthy value!
 
       if (
-        isNaN(Number(priceInput.value)) ||
-        isNaN(Number(discountQtyInput.value || 0)) ||
-        isNaN(Number(discountAmountInput.value || 0))
+        !Number.isFinite(newPrice) ||
+        newPrice <= 0 ||
+        !Number.isFinite(newDiscountQty) ||
+        !Number.isFinite(newDiscountAmount)
       ) {
         console.log("非數字");
+        alert("請輸入正確金額（售價需大於0）");
       } else {
         Product.historyRetrieve();
         new Product(
-          nameInput.value,
-          Number(priceInput.value),
-          Number(discountQtyInput.value || 0),
-          Number(discountAmountInput.value || 0)
+          newName,
+          newPrice,
+          Math.max(0, newDiscountQty),
+          Math.max(0, newDiscountAmount)
         );
         // console.log("是數字");
         // console.log(Product.products);
@@ -296,7 +322,7 @@ const myEditScript = (LZString, bootstrap) => {
                 );
                 let newName = document.querySelector(
                   "#yoichi-p-edit-setName"
-                ).value;
+                ).value.trim();
 
                 let newPrice = document.querySelector(
                   "#yoichi-p-edit-setPrice"
@@ -307,19 +333,39 @@ const myEditScript = (LZString, bootstrap) => {
                 let newDiscountAmount = document.querySelector(
                   "#yoichi-p-edit-setDiscountAmount"
                 ).value;
+                if (!newName) {
+                  alert("商品名稱不可空白");
+                  return p;
+                }
+
                 if (
-                  isNaN(Number(newPrice)) ||
-                  isNaN(Number(newDiscountQty || 0)) ||
-                  isNaN(Number(newDiscountAmount || 0))
+                  Product.products.some(
+                    (product, pIndex) =>
+                      pIndex !== index && product.name == newName
+                  )
+                ) {
+                  alert("重複商品名稱");
+                  return p;
+                }
+
+                if (
+                  !Number.isFinite(Number(newPrice)) ||
+                  Number(newPrice) <= 0 ||
+                  !Number.isFinite(Number(newDiscountQty || 0)) ||
+                  !Number.isFinite(Number(newDiscountAmount || 0))
                 ) {
                   console.log("非數字");
+                  alert("請輸入正確金額（售價需大於0）");
                 } else {
                   // 改變暫存products資料完成
                   p.name = newName;
                   console.log("你好 ", p.name, p.price);
                   p.price = Number(newPrice);
-                  p.discountQty = Number(newDiscountQty || 0);
-                  p.discountAmount = Number(newDiscountAmount || 0);
+                  p.discountQty = Math.max(0, Number(newDiscountQty || 0));
+                  p.discountAmount = Math.max(
+                    0,
+                    Number(newDiscountAmount || 0)
+                  );
 
                   // 改變畫面
                   console.log(checkExist.parentElement);

@@ -23,6 +23,7 @@ export default function Edit() {
 
     return () => {
       // Cleanup if necessary
+      window.__yoichiEditScriptInitialized = false;
       document.body.removeChild(script);
     };
   }, []);
