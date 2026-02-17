@@ -48,21 +48,14 @@ export default function Edit() {
             工作區
           </Link>
           <Link
-            className="flex-sm-fill text-sm-center nav-link"
-            href="./history"
-          >
-            歷史紀錄
-          </Link>
-          <Link
             className="flex-sm-fill text-sm-center nav-link active"
             href="#"
           >
             功能編輯
           </Link>
           <Link
-            className="flex-sm-fill text-sm-center nav-link disabled"
-            aria-disabled="true"
-            href="#"
+            className="flex-sm-fill text-sm-center nav-link"
+            href="/member"
           >
             會員專區
           </Link>
