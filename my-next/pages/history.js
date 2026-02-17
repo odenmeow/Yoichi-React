@@ -13,34 +13,15 @@ import {
 
 const HISTORY_ENTRY_FLAG = "yoichi-history-entry-from-member";
 
-const removeLegacyPasswordOverlay = () => {
-  const lockTextNodes = Array.from(document.querySelectorAll("body *")).filter((el) => {
+const normalizeHistoryView = () => {
+  const oldLocks = Array.from(document.querySelectorAll("body *")).filter((el) => {
     const text = (el.textContent || "").trim();
     return text.includes("請輸入密碼觀看歷史紀錄") || text === "解鎖";
   });
 
-  lockTextNodes.forEach((node) => {
-    const container = node.closest("form, section, div");
-    if (container) {
-      container.remove();
-    }
-  });
-
-  document.querySelectorAll("body > div").forEach((el) => {
-    const style = window.getComputedStyle(el);
-    const largeMask =
-      style.position === "fixed" &&
-      (el.offsetWidth >= window.innerWidth * 0.9 || style.inset === "0px") &&
-      (el.offsetHeight >= window.innerHeight * 0.9 || style.inset === "0px");
-    const isOverlay =
-      largeMask &&
-      (Number.parseInt(style.zIndex || "0", 10) >= 100 ||
-        style.backgroundColor.includes("rgba") ||
-        style.backdropFilter !== "none");
-
-    if (isOverlay) {
-      el.remove();
-    }
+  oldLocks.forEach((node) => {
+    const wrap = node.closest("form, section, div");
+    if (wrap) wrap.remove();
   });
 
   document.body.classList.remove("modal-open");
@@ -49,15 +30,21 @@ const removeLegacyPasswordOverlay = () => {
   document.body.style.removeProperty("pointer-events");
   document.body.style.removeProperty("filter");
 
+  const appRoot = document.getElementById("__next");
+  if (appRoot) {
+    appRoot.style.filter = "none";
+    appRoot.style.pointerEvents = "auto";
+    appRoot.style.opacity = "1";
+  }
+
   document
     .querySelectorAll("main, section, .presentation-Area, .presentation-Area.date-block")
     .forEach((el) => {
-      el.style.removeProperty("filter");
-      el.style.removeProperty("pointer-events");
-      el.style.removeProperty("opacity");
+      el.style.filter = "none";
+      el.style.pointerEvents = "auto";
+      el.style.opacity = "1";
     });
 };
-
 
 export default function History() {
   const router = useRouter();
@@ -65,6 +52,12 @@ export default function History() {
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    normalizeHistoryView();
+    const timer = setInterval(normalizeHistoryView, 700);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const member = getCurrentMember();
@@ -82,9 +75,7 @@ export default function History() {
   useEffect(() => {
     if (!allowed) return;
 
-    removeLegacyPasswordOverlay();
-    const overlayObserver = new MutationObserver(() => removeLegacyPasswordOverlay());
-    overlayObserver.observe(document.body, { childList: true, subtree: true });
+    normalizeHistoryView();
 
     const bootstrapFallback = { Popover: class {} };
     let initialized = false;
@@ -92,6 +83,7 @@ export default function History() {
       if (initialized) return;
       initialized = true;
       myHistoryScript(LZString, window.bootstrap || bootstrapFallback);
+      normalizeHistoryView();
     };
 
     const script = document.createElement("script");
@@ -114,7 +106,6 @@ export default function History() {
     document.addEventListener("visibilitychange", syncSession);
 
     return () => {
-      overlayObserver.disconnect();
       clearTimeout(fallbackTimer);
       cleanupHidden();
       document.removeEventListener("visibilitychange", syncSession);
