@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import "popper.js";
 import LZString from "lz-string";
@@ -11,10 +11,10 @@ import {
   logoutWhenHidden,
 } from "../lib/memberAuth";
 
+const HISTORY_ENTRY_FLAG = "yoichi-history-entry-from-member";
+
 export default function History() {
   const router = useRouter();
-  const fromMember = useMemo(() => router.query.from === "member", [router.query.from]);
-
   const [allowed, setAllowed] = useState(false);
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
@@ -22,12 +22,16 @@ export default function History() {
 
   useEffect(() => {
     const member = getCurrentMember();
+    const fromMember = sessionStorage.getItem(HISTORY_ENTRY_FLAG) === "1";
+
     if (member && fromMember) {
       setAllowed(true);
       return;
     }
+
     setAllowed(false);
-  }, [fromMember]);
+    sessionStorage.removeItem(HISTORY_ENTRY_FLAG);
+  }, []);
 
   useEffect(() => {
     if (!allowed) return;
@@ -53,6 +57,7 @@ export default function History() {
     const syncSession = () => {
       if (!getCurrentMember()) {
         setAllowed(false);
+        sessionStorage.removeItem(HISTORY_ENTRY_FLAG);
         router.replace("/member");
       }
     };
@@ -73,24 +78,38 @@ export default function History() {
     setMessage(result.message);
     if (result.ok) {
       setPassword("");
+      sessionStorage.setItem(HISTORY_ENTRY_FLAG, "1");
       setAllowed(true);
-      router.replace("/history?from=member");
     }
   };
 
   const handleBackToMember = () => {
     logoutMember();
+    sessionStorage.removeItem(HISTORY_ENTRY_FLAG);
     router.replace("/member");
+  };
+
+  const handleLeaveHistory = () => {
+    logoutMember();
+    sessionStorage.removeItem(HISTORY_ENTRY_FLAG);
   };
 
   return (
     <div>
       <header>
         <nav className="nav nav-pills flex-column flex-sm-row">
-          <Link className="flex-sm-fill text-sm-center nav-link" href="/">
+          <Link
+            className="flex-sm-fill text-sm-center nav-link"
+            href="/"
+            onClick={handleLeaveHistory}
+          >
             工作區
           </Link>
-          <Link className="flex-sm-fill text-sm-center nav-link" href="/edit">
+          <Link
+            className="flex-sm-fill text-sm-center nav-link"
+            href="/edit"
+            onClick={handleLeaveHistory}
+          >
             功能編輯
           </Link>
           <Link className="flex-sm-fill text-sm-center nav-link active" href="/member">
@@ -121,7 +140,11 @@ export default function History() {
                 <button className="btn btn-primary" onClick={handleLogin}>
                   登入並查看
                 </button>
-                <button type="button" className="btn btn-outline-secondary" onClick={handleBackToMember}>
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={handleBackToMember}
+                >
                   回會員專區
                 </button>
               </div>

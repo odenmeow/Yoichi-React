@@ -1,5 +1,6 @@
 import Head from "next/head";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import {
   createMemberBySuper,
@@ -18,7 +19,10 @@ const cardStyle = {
   boxShadow: "0 10px 24px rgba(0, 0, 0, 0.12)",
 };
 
+const HISTORY_ENTRY_FLAG = "yoichi-history-entry-from-member";
+
 export default function Member() {
+  const router = useRouter();
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
   const [newAccount, setNewAccount] = useState("");
@@ -28,8 +32,17 @@ export default function Member() {
 
   useEffect(() => {
     setMember(getCurrentMember());
-    const cleanup = logoutWhenHidden();
-    return () => cleanup();
+    const cleanupHidden = logoutWhenHidden();
+
+    const syncMemberState = () => {
+      setMember(getCurrentMember());
+    };
+    document.addEventListener("visibilitychange", syncMemberState);
+
+    return () => {
+      cleanupHidden();
+      document.removeEventListener("visibilitychange", syncMemberState);
+    };
   }, []);
 
   const handleLogin = (event) => {
@@ -58,6 +71,17 @@ export default function Member() {
     setMessage("已登出");
   };
 
+  const handleEnterHistory = () => {
+    sessionStorage.setItem(HISTORY_ENTRY_FLAG, "1");
+    router.push("/history");
+  };
+
+  const handleLeaveMemberArea = () => {
+    logoutMember();
+    setMember(null);
+    sessionStorage.removeItem(HISTORY_ENTRY_FLAG);
+  };
+
   return (
     <div>
       <Head>
@@ -65,10 +89,18 @@ export default function Member() {
       </Head>
       <header>
         <nav className="nav nav-pills flex-column flex-sm-row">
-          <Link className="flex-sm-fill text-sm-center nav-link" href="/">
+          <Link
+            className="flex-sm-fill text-sm-center nav-link"
+            href="/"
+            onClick={handleLeaveMemberArea}
+          >
             工作區
           </Link>
-          <Link className="flex-sm-fill text-sm-center nav-link" href="/edit">
+          <Link
+            className="flex-sm-fill text-sm-center nav-link"
+            href="/edit"
+            onClick={handleLeaveMemberArea}
+          >
             功能編輯
           </Link>
           <Link className="flex-sm-fill text-sm-center nav-link active" href="#">
@@ -119,9 +151,9 @@ export default function Member() {
               </div>
 
               <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                <Link className="btn btn-primary" href="/history?from=member">
+                <button className="btn btn-primary" type="button" onClick={handleEnterHistory}>
                   前往後臺
-                </Link>
+                </button>
                 <button className="btn btn-outline-danger" onClick={handleLogout}>
                   登出
                 </button>
@@ -161,7 +193,7 @@ export default function Member() {
             </section>
           )}
 
-          {message ?
+          {message ? (
             <p
               style={{
                 marginTop: "1rem",
@@ -170,7 +202,8 @@ export default function Member() {
               }}
             >
               {message}
-            </p> : null}
+            </p>
+          ) : null}
         </section>
       </main>
     </div>
