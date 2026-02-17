@@ -4,6 +4,82 @@ const myHistoryScript = (LZString, bootstrap) => {
   }
   window.__yoichiHistoryScriptInitialized = true;
 
+  const HISTORY_PASSWORD = "11806";
+  let lockOverlay;
+  let lockInput;
+
+  const setHistoryLocked = (locked) => {
+    document.body.classList.toggle("yoichi-history-locked", locked);
+    if (!lockOverlay) {
+      return;
+    }
+    lockOverlay.style.display = locked ? "flex" : "none";
+    if (locked && lockInput) {
+      lockInput.value = "";
+      lockInput.focus();
+    }
+  };
+
+  const initHistoryPasswordLock = () => {
+    if (!document.getElementById("yoichi-history-lock-style")) {
+      const style = document.createElement("style");
+      style.id = "yoichi-history-lock-style";
+      style.innerHTML = `
+        body.yoichi-history-locked header,
+        body.yoichi-history-locked main,
+        body.yoichi-history-locked footer {
+          filter: blur(5px);
+          pointer-events: none;
+          user-select: none;
+        }
+      `;
+      document.head.append(style);
+    }
+
+    lockOverlay = document.createElement("section");
+    lockOverlay.className = "yoichi-history-lock-overlay";
+    lockOverlay.style.cssText =
+      "position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;";
+    lockOverlay.innerHTML = `
+      <form class="yoichi-history-lock-form" style="width:min(90vw,420px);background:#fff;border-radius:12px;padding:1.25rem;display:grid;gap:.75rem;">
+        <h3 style="margin:0;">請輸入密碼觀看歷史紀錄</h3>
+        <input type="password" class="form-control yoichi-history-lock-input" />
+        <button type="submit" class="btn btn-primary">解鎖</button>
+      </form>
+    `;
+
+    lockInput = lockOverlay.querySelector(".yoichi-history-lock-input");
+    const lockForm = lockOverlay.querySelector(".yoichi-history-lock-form");
+    lockForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if ((lockInput.value || "") === HISTORY_PASSWORD) {
+        setHistoryLocked(false);
+        return;
+      }
+      alert("密碼錯誤");
+      lockInput.value = "";
+      lockInput.focus();
+    });
+
+    const lockOnHidden = () => {
+      if (document.hidden) {
+        setHistoryLocked(true);
+      }
+    };
+
+    document.addEventListener("visibilitychange", lockOnHidden);
+    document.body.append(lockOverlay);
+    setHistoryLocked(true);
+
+    window.__yoichiHistoryCleanup = () => {
+      document.removeEventListener("visibilitychange", lockOnHidden);
+      if (lockOverlay) {
+        lockOverlay.remove();
+      }
+      document.body.classList.remove("yoichi-history-locked");
+    };
+  };
+
   class HTMLTime {
     static interval;
     static lock = false;
@@ -688,6 +764,7 @@ const myHistoryScript = (LZString, bootstrap) => {
 
     //   loadOrdersByDate(dateRecords[num]);
   }
+  initHistoryPasswordLock();
   selectedDate(3);
 };
 export default myHistoryScript;
