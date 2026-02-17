@@ -54,3 +54,15 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+
+## History 密碼鎖驗證（手動）
+
+為了避免只改數量沒按「生成」導致沒有歷史資料，請用以下流程驗證：
+
+1. 打開工作區 `/`，先在商品欄位填數量。
+2. 按下「生成」（`.yoichi-order-send`）建立訂單。
+3. 切到歷史頁 `/history`，應先出現密碼鎖遮罩。
+4. 輸入密碼 `11806` 解鎖後，確認：
+   - 上方有剛建立的訂單卡片。
+   - 下方日期區會出現當天日期（來自 `dateRecords`）。
+5. 切到其他頁籤或其他分頁，再切回歷史頁，應重新要求輸入密碼。
