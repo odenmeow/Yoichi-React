@@ -1,7 +1,5 @@
 const STORAGE_USERS_KEY = "yoichi-member-users-v1";
 const STORAGE_SESSION_KEY = "yoichi-member-session-v1";
-
-const STORAGE_REMEMBER_ACCOUNT_KEY = "yoichi-member-remember-account-v1";
 const SECRET = "yoichi-member-secret-11806";
 
 const SUPER_ACCOUNT = {
@@ -161,19 +159,4 @@ export const logoutWhenHidden = () => {
   };
   document.addEventListener("visibilitychange", onHidden);
   return () => document.removeEventListener("visibilitychange", onHidden);
-};
-
-
-export const getRememberedAccount = () => {
-  const remembered = safeGet(STORAGE_REMEMBER_ACCOUNT_KEY);
-  return remembered ? String(remembered).trim() : "";
-};
-
-export const setRememberedAccount = (id) => {
-  const safeId = String(id || "").trim();
-  if (!safeId) {
-    safeRemove(STORAGE_REMEMBER_ACCOUNT_KEY);
-    return;
-  }
-  safeSet(STORAGE_REMEMBER_ACCOUNT_KEY, safeId);
 };

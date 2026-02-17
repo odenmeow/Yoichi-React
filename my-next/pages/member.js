@@ -5,11 +5,9 @@ import { useEffect, useState } from "react";
 import {
   createMemberBySuper,
   getCurrentMember,
-  getRememberedAccount,
   loginMember,
   logoutMember,
   logoutWhenHidden,
-  setRememberedAccount,
 } from "../lib/memberAuth";
 import { normalizeAppInteraction } from "../lib/viewCleanup";
 
@@ -31,16 +29,10 @@ export default function Member() {
   const [newAccount, setNewAccount] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [member, setMember] = useState(null);
-  const [rememberAccount, setRememberAccount] = useState(true);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
     normalizeAppInteraction();
-    const remembered = getRememberedAccount();
-    if (remembered) {
-      setAccount(remembered);
-      setRememberAccount(true);
-    }
     setMember(getCurrentMember());
     const cleanupHidden = logoutWhenHidden();
 
@@ -63,11 +55,6 @@ export default function Member() {
     const result = loginMember(account, password);
     setMessage(result.message);
     if (result.ok) {
-      if (rememberAccount) {
-        setRememberedAccount(account);
-      } else {
-        setRememberedAccount("");
-      }
       setMember(getCurrentMember());
       setPassword("");
     }
@@ -149,14 +136,6 @@ export default function Member() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-              <label style={{ display: "flex", alignItems: "center", gap: "0.45rem", marginBottom: 0 }}>
-                <input
-                  type="checkbox"
-                  checked={rememberAccount}
-                  onChange={(e) => setRememberAccount(e.target.checked)}
-                />
-                記住帳號
-              </label>
               <div style={{ display: "flex", gap: "0.5rem" }}>
                 <button className="btn btn-primary" onClick={handleLogin}>
                   登入
