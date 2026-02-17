@@ -13,6 +13,32 @@ import {
 
 const HISTORY_ENTRY_FLAG = "yoichi-history-entry-from-member";
 
+const removeLegacyPasswordOverlay = () => {
+  const lockTextNodes = Array.from(document.querySelectorAll("body *")).filter((el) => {
+    const text = (el.textContent || "").trim();
+    return text.includes("請輸入密碼觀看歷史紀錄") || text === "解鎖";
+  });
+
+  lockTextNodes.forEach((node) => {
+    const container = node.closest("form, section, div");
+    if (container) {
+      container.remove();
+    }
+  });
+
+  document.querySelectorAll("body > div").forEach((el) => {
+    const style = window.getComputedStyle(el);
+    const isOverlay =
+      style.position === "fixed" &&
+      Number.parseInt(style.zIndex || "0", 10) >= 999 &&
+      (style.inset === "0px" || style.top === "0px");
+    if (isOverlay) {
+      el.remove();
+    }
+  });
+};
+
+
 export default function History() {
   const router = useRouter();
   const [allowed, setAllowed] = useState(false);
@@ -35,6 +61,10 @@ export default function History() {
 
   useEffect(() => {
     if (!allowed) return;
+
+    removeLegacyPasswordOverlay();
+    const overlayObserver = new MutationObserver(() => removeLegacyPasswordOverlay());
+    overlayObserver.observe(document.body, { childList: true, subtree: true });
 
     const bootstrapFallback = { Popover: class {} };
     let initialized = false;
@@ -64,6 +94,7 @@ export default function History() {
     document.addEventListener("visibilitychange", syncSession);
 
     return () => {
+      overlayObserver.disconnect();
       clearTimeout(fallbackTimer);
       cleanupHidden();
       document.removeEventListener("visibilitychange", syncSession);
