@@ -61,22 +61,17 @@ const myHistoryScript = (LZString, bootstrap) => {
       lockInput.focus();
     });
 
-    const lockOnBlur = () => {
-      setHistoryLocked(true);
-    };
     const lockOnHidden = () => {
       if (document.hidden) {
         setHistoryLocked(true);
       }
     };
 
-    window.addEventListener("blur", lockOnBlur);
     document.addEventListener("visibilitychange", lockOnHidden);
     document.body.append(lockOverlay);
     setHistoryLocked(true);
 
     window.__yoichiHistoryCleanup = () => {
-      window.removeEventListener("blur", lockOnBlur);
       document.removeEventListener("visibilitychange", lockOnHidden);
       if (lockOverlay) {
         lockOverlay.remove();
@@ -640,9 +635,12 @@ const myHistoryScript = (LZString, bootstrap) => {
     let copydate = JSON.parse(JSON.stringify(dateRecords));
     if (copydate == null) return;
 
-    copydate.reverse();
+    copydate = [...new Set(copydate)].reverse();
     let packsFor3 = 0;
     let target = document.querySelector(".presentation-Area.date-block");
+    if (target) {
+      target.innerHTML = "";
+    }
     let dateArr = [];
     for (let i = 1; i <= copydate.length; i++) {
       // console.log(copydate[i-1].slice("yoichiOrders-".length));
