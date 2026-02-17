@@ -3,6 +3,7 @@ const myWorkScript = (LZString, bootstrap) => {
     return;
   }
   window.__yoichiWorkScriptInitialized = true;
+  const isWorkSummaryDisabled = true;
 
   const safeStorageGet = (key) => {
     try {
@@ -34,6 +35,9 @@ const myWorkScript = (LZString, bootstrap) => {
   };
 
   const readWorkSettings = () => {
+    if (isWorkSummaryDisabled) {
+      return { showSummary: false };
+    }
     const settings = safeParseJSON(safeStorageGet("yoichi-work-settings"));
     if (settings == null || typeof settings !== "object") {
       return { showSummary: true };
@@ -809,6 +813,9 @@ const myWorkScript = (LZString, bootstrap) => {
       });
     })();
     (function create_fulfilledOrdersSummary() {
+      if (isWorkSummaryDisabled) {
+        return;
+      }
       let products = ``;
       for (let name in sellLog) {
         // console.log(sellLog[name], name);
