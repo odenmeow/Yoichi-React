@@ -9,6 +9,7 @@ import {
   logoutMember,
   logoutWhenHidden,
 } from "../lib/memberAuth";
+import { normalizeAppInteraction } from "../lib/viewCleanup";
 
 const cardStyle = {
   maxWidth: 700,
@@ -31,15 +32,19 @@ export default function Member() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
+    normalizeAppInteraction();
     setMember(getCurrentMember());
     const cleanupHidden = logoutWhenHidden();
 
     const syncMemberState = () => {
+      normalizeAppInteraction();
       setMember(getCurrentMember());
     };
     document.addEventListener("visibilitychange", syncMemberState);
+    const timer = setInterval(normalizeAppInteraction, 700);
 
     return () => {
+      clearInterval(timer);
       cleanupHidden();
       document.removeEventListener("visibilitychange", syncMemberState);
     };
