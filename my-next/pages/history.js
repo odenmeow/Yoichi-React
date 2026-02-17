@@ -28,14 +28,34 @@ const removeLegacyPasswordOverlay = () => {
 
   document.querySelectorAll("body > div").forEach((el) => {
     const style = window.getComputedStyle(el);
-    const isOverlay =
+    const largeMask =
       style.position === "fixed" &&
-      Number.parseInt(style.zIndex || "0", 10) >= 999 &&
-      (style.inset === "0px" || style.top === "0px");
+      (el.offsetWidth >= window.innerWidth * 0.9 || style.inset === "0px") &&
+      (el.offsetHeight >= window.innerHeight * 0.9 || style.inset === "0px");
+    const isOverlay =
+      largeMask &&
+      (Number.parseInt(style.zIndex || "0", 10) >= 100 ||
+        style.backgroundColor.includes("rgba") ||
+        style.backdropFilter !== "none");
+
     if (isOverlay) {
       el.remove();
     }
   });
+
+  document.body.classList.remove("modal-open");
+  document.documentElement.style.removeProperty("overflow");
+  document.body.style.removeProperty("overflow");
+  document.body.style.removeProperty("pointer-events");
+  document.body.style.removeProperty("filter");
+
+  document
+    .querySelectorAll("main, section, .presentation-Area, .presentation-Area.date-block")
+    .forEach((el) => {
+      el.style.removeProperty("filter");
+      el.style.removeProperty("pointer-events");
+      el.style.removeProperty("opacity");
+    });
 };
 
 
