@@ -55,6 +55,10 @@ export default function History() {
     return () => {
       // Cleanup if necessary
       clearTimeout(fallbackTimer);
+      if (typeof window.__yoichiHistoryCleanup === "function") {
+        window.__yoichiHistoryCleanup();
+        window.__yoichiHistoryCleanup = null;
+      }
       window.__yoichiHistoryScriptInitialized = false;
       document.body.removeChild(script);
     };
