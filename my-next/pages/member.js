@@ -119,7 +119,7 @@ export default function Member() {
               </div>
 
               <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                <Link className="btn btn-primary" href="/history">
+                <Link className="btn btn-primary" href="/history?from=member">
                   前往後臺
                 </Link>
                 <button className="btn btn-outline-danger" onClick={handleLogout}>
