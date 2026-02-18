@@ -35,13 +35,26 @@ const myEditScript = (LZString, bootstrap) => {
     }
   };
 
+  const normalizeTextColor = (value) => {
+    if (typeof value !== "string") return "#ff0000";
+    const normalized = value.trim();
+    return /^#[0-9a-fA-F]{6}$/.test(normalized) ? normalized : "#ff0000";
+  };
+
   class Product {
     static products = [];
-    constructor(name, price, discountQty = 0, discountAmount = 0) {
+    constructor(
+      name,
+      price,
+      discountQty = 0,
+      discountAmount = 0,
+      textColor = "#ff0000"
+    ) {
       this.name = name;
       this.price = price;
       this.discountQty = discountQty;
       this.discountAmount = discountAmount;
+      this.textColor = normalizeTextColor(textColor);
       Product.products.push(this);
     }
 
@@ -55,7 +68,9 @@ const myEditScript = (LZString, bootstrap) => {
         return "沒歷史紀錄或短缺";
       }
       Product.products = [];
-      safeForEach(data, ({ name, price, discountQty, discountAmount }) => {
+      safeForEach(
+        data,
+        ({ name, price, discountQty, discountAmount, textColor }) => {
         let safeName = String(name || "").trim();
         let safePrice = Number(price);
         if (!safeName || !Number.isFinite(safePrice) || safePrice <= 0) {
@@ -65,9 +80,11 @@ const myEditScript = (LZString, bootstrap) => {
           safeName,
           safePrice,
           Number(discountQty) || 0,
-          Number(discountAmount) || 0
+          Number(discountAmount) || 0,
+          normalizeTextColor(textColor)
         );
-      });
+        }
+      );
 
       if (Product.products.length === 0) {
         return "沒歷史紀錄或短缺";
@@ -95,40 +112,105 @@ const myEditScript = (LZString, bootstrap) => {
     }
   }
   function displayHistoryItems() {
+    const container = document.querySelector("section.show-products");
+    if (!container) return;
+    safeForEach(
+      container.querySelectorAll(".yoichi-p-product-row"),
+      (row) => row.remove()
+    );
+    const title = container.querySelector(".yoichi-p-show-name");
+    if (title) {
+      title.innerText = `商品資料（${Product.products.length}列）`;
+    }
     safeForEach(
       Product.products,
-      ({ name, price, discountQty, discountAmount }, index) => {
-        // 創造前先看有沒有存在目前畫面!
-        let checkExist = document.querySelector(`#yoichi-p-show-edit-${index}`);
-        if (checkExist) {
-        } else {
-          let p_shows = document.createElement("div");
-          p_shows.classList.add("yoichi-p-shows");
-          p_shows.innerHTML = [
-            `<div class="yoichi-p-show-meta">`,
-            `<div class="yoichi-p-field yoichi-p-field-name"><p class="yoichi-p-label">商品名稱</p><p class="yoichi-p-value">${name}</p></div>`,
-            `<div class="yoichi-p-field yoichi-p-field-price"><p class="yoichi-p-label">售價</p><p class="yoichi-p-value">${price}</p></div>`,
-            `<div class="yoichi-p-field yoichi-p-field-discountQty"><p class="yoichi-p-label">折扣數量</p><p class="yoichi-p-value">${
-              discountQty || 0
-            }</p></div>`,
-            `<div class="yoichi-p-field yoichi-p-field-discountAmount"><p class="yoichi-p-label">折扣金額</p><p class="yoichi-p-value">${
-              discountAmount || 0
-            }</p></div>`,
-            `</div>`,
-            `<button
-        type="button"
-        id="yoichi-p-show-edit-${index}"
-        class="yoichi-p-show-edit btn btn-warning"
-        data-bs-toggle="modal"
-        data-bs-target="#Modal-edit-product"
-      >`,
-            `編輯
-      </button>
-    </div>`,
-          ].join("");
-          let container = document.querySelector("section.show-products");
-          container.append(p_shows);
+      ({ name, price, discountQty, discountAmount, textColor }, index) => {
+        let p_shows = document.createElement("div");
+        p_shows.classList.add("yoichi-p-shows", "yoichi-p-product-row");
+        p_shows.innerHTML = [
+          `<div class="yoichi-p-show-meta">`,
+          `<div class="yoichi-p-field yoichi-p-field-name"><p class="yoichi-p-label">商品名稱</p><p class="yoichi-p-value" style="color:${normalizeTextColor(
+            textColor
+          )}">${name}</p></div>`,
+          `<div class="yoichi-p-field yoichi-p-field-price"><p class="yoichi-p-label">售價</p><p class="yoichi-p-value">${price}</p></div>`,
+          `<div class="yoichi-p-field yoichi-p-field-discountQty"><p class="yoichi-p-label">折扣數量</p><p class="yoichi-p-value">${
+            discountQty || 0
+          }</p></div>`,
+          `<div class="yoichi-p-field yoichi-p-field-discountAmount"><p class="yoichi-p-label">折扣金額</p><p class="yoichi-p-value">${
+            discountAmount || 0
+          }</p></div>`,
+          `<div class="yoichi-p-field yoichi-p-field-textColor"><p class="yoichi-p-label">文字顏色</p><p class="yoichi-p-value">${normalizeTextColor(
+            textColor
+          )}</p></div>`,
+          `</div>`,
+          `<div class="yoichi-p-controls">`,
+          `<button type="button" class="btn btn-outline-secondary yoichi-p-move-up" data-index="${index}">上移</button>`,
+          `<button type="button" class="btn btn-outline-secondary yoichi-p-move-down" data-index="${index}">下移</button>`,
+          `<button type="button" id="yoichi-p-show-edit-${index}" class="yoichi-p-show-edit btn btn-warning" data-bs-toggle="modal" data-bs-target="#Modal-edit-product">編輯</button>`,
+          `<button type="button" class="btn btn-outline-primary yoichi-p-change-color" data-index="${index}">改色</button>`,
+          `<input type="color" class="yoichi-p-color-picker d-none" value="${normalizeTextColor(
+            textColor
+          )}" data-index="${index}" />`,
+          `</div>`,
+        ].join("");
+        container.append(p_shows);
+      }
+    );
+    bindProductRowEvents();
+  }
+
+  function swapProducts(firstIndex, secondIndex) {
+    const temp = Product.products[firstIndex];
+    Product.products[firstIndex] = Product.products[secondIndex];
+    Product.products[secondIndex] = temp;
+    Product.historyUpdate();
+    displayHistoryItems();
+  }
+
+  function bindProductRowEvents() {
+    safeForEach(document.querySelectorAll(".yoichi-p-show-edit"), (btn) => {
+      btn.addEventListener("click", (e) => {
+        let parentElement = e.target.closest(".yoichi-p-product-row");
+        let index = Number(btn.id.match(/\d+/)[0]);
+        synchronizeEditModalContent(parentElement, index);
+      });
+    });
+
+    safeForEach(document.querySelectorAll(".yoichi-p-move-up"), (btn) => {
+      btn.addEventListener("click", () => {
+        const index = Number(btn.dataset.index);
+        if (!Number.isFinite(index) || index <= 0) return;
+        swapProducts(index, index - 1);
+      });
+    });
+
+    safeForEach(document.querySelectorAll(".yoichi-p-move-down"), (btn) => {
+      btn.addEventListener("click", () => {
+        const index = Number(btn.dataset.index);
+        if (!Number.isFinite(index) || index >= Product.products.length - 1) {
+          return;
         }
+        swapProducts(index, index + 1);
+      });
+    });
+
+    safeForEach(
+      document.querySelectorAll(".yoichi-p-change-color"),
+      (btn, btnIndex) => {
+        const picker = document.querySelectorAll(".yoichi-p-color-picker")[
+          btnIndex
+        ];
+        if (!picker) return;
+        btn.addEventListener("click", () => {
+          picker.click();
+        });
+        picker.addEventListener("change", () => {
+          const index = Number(picker.dataset.index);
+          if (!Product.products[index]) return;
+          Product.products[index].textColor = normalizeTextColor(picker.value);
+          Product.historyUpdate();
+          displayHistoryItems();
+        });
       }
     );
   }
@@ -147,22 +229,6 @@ const myEditScript = (LZString, bootstrap) => {
   // 剛連線，初始畫面透過localStorage查找歷史資料、去建立html顯示畫面出來
   displayHistoryItems();
 
-  // Step2 針對畫面 all btEdits 增加監聽功能 ，modalEdit才能知道是誰被點取，
-  // 內含一小function
-  (function btnEditAppendFunctions() {
-    let btnEdits = document.querySelectorAll(".yoichi-p-show-edit");
-    safeForEach(btnEdits, (btn) => {
-      btn.addEventListener("click", (e) => {
-        let parentElement = e.target.parentElement;
-        // 跟sync 合併使用
-        // 每次被點選 都要查看自已的yoichi-p-show-edit-${index} index是多少
-        let index = btn.id.match(/\d+/);
-        index = Number(index[0]);
-        synchronizeEditModalContent(parentElement, index);
-      });
-    });
-    // #yoichi-p-delete  這是modalEdit 刪除按鈕，只會有一個，欲知who被刪除直接參照modal內名稱跟價錢
-  })();
   // 使Modal 編輯畫面 讀取form area的內容 (by .now-edit-product-${index})
   function synchronizeEditModalContent(parentElement, index) {
     let productName = parentElement.querySelector(
@@ -173,6 +239,7 @@ const myEditScript = (LZString, bootstrap) => {
     ).innerText;
     let productDiscountQty = Product.products[index].discountQty || 0;
     let productDiscountAmount = Product.products[index].discountAmount || 0;
+    let productTextColor = normalizeTextColor(Product.products[index].textColor);
 
     document.querySelector("#yoichi-p-edit-setName").value = productName;
     document.querySelector("#yoichi-p-edit-setPrice").value = productPrice;
@@ -180,6 +247,8 @@ const myEditScript = (LZString, bootstrap) => {
       productDiscountQty;
     document.querySelector("#yoichi-p-edit-setDiscountAmount").value =
       productDiscountAmount;
+    document.querySelector("#yoichi-p-edit-setTextColor").value =
+      productTextColor;
 
     let modalEdit = document.querySelector("#yoichi-product-edit");
     for (let i = 0; i <= Product.products.length; i++) {
@@ -200,12 +269,14 @@ const myEditScript = (LZString, bootstrap) => {
       let discountAmountInput = document.querySelector(
         "#yoichi-p-add-setDiscountAmount"
       );
+      let textColorInput = document.querySelector("#yoichi-p-add-setTextColor");
       // appendAlert("成功", "success");
 
       let newName = nameInput.value.trim();
       let newPrice = Number(priceInput.value);
       let newDiscountQty = Number(discountQtyInput.value || 0);
       let newDiscountAmount = Number(discountAmountInput.value || 0);
+      let newTextColor = normalizeTextColor(textColorInput.value);
 
       if (!newName) {
         alert("商品名稱不可空白");
@@ -234,7 +305,8 @@ const myEditScript = (LZString, bootstrap) => {
           newName,
           newPrice,
           Math.max(0, newDiscountQty),
-          Math.max(0, newDiscountAmount)
+          Math.max(0, newDiscountAmount),
+          newTextColor
         );
         // console.log("是數字");
         // console.log(Product.products);
@@ -242,23 +314,9 @@ const myEditScript = (LZString, bootstrap) => {
         priceInput.value = "";
         discountQtyInput.value = "";
         discountAmountInput.value = "";
+        textColorInput.value = "#ff0000";
         Product.historyUpdate();
         displayHistoryItems();
-        // 有更新要重新抓資料
-        // 編輯按鈕要附加功能上去
-        let btnEdits = document.querySelectorAll(".yoichi-p-show-edit");
-        safeForEach(btnEdits, (btn, i) => {
-          if (i == Product.products.length - 1) {
-            btn.addEventListener("click", (e) => {
-              let parentElement = e.target.parentElement;
-              // 跟sync 合併使用
-              // 每次被點選 都要查看自已的yoichi-p-show-edit-${index} index是多少
-              let index = btn.id.match(/\d+/);
-              index = Number(index[0]);
-              synchronizeEditModalContent(parentElement, index);
-            });
-          }
-        });
       }
     });
   })();
@@ -279,40 +337,12 @@ const myEditScript = (LZString, bootstrap) => {
             console.log("numberPart錯誤");
           } else {
             // 記得回傳，因為他不更動原始呼叫物件
-            Product.products = Product.products.filter((p, index) => {
-              if (Number(numberPart) == index) {
-                let checkExist = document.querySelector(
-                  `#yoichi-p-show-edit-${index}`
-                );
-                console.log(checkExist.parentElement);
-                checkExist.parentElement.addEventListener(
-                  "animationend",
-                  (e) => {
-                    console.log("被觸發了");
-                    e.target.remove();
-                    // 直接刪除會跳號，要處理一下。
-                    // 更新 畫面上面的edit-標籤號碼 不要讓它跳號!
-                    (function refreshEdit_id() {
-                      let displayAreaDiv = document.querySelectorAll(
-                        ".yoichi-p-show-edit"
-                      );
-                      console.log("正在改編號");
-                      safeForEach(displayAreaDiv, (btn, index) => {
-                        console.log(btn, index);
-                        btn.id = `yoichi-p-show-edit-${index}`;
-                      });
-                    })();
-                  }
-                );
-                checkExist.parentElement.style.animation =
-                  "scaleDown 0.3s ease forwards";
-                return false; // vanish
-              } else {
-                return true; //pass
-              }
-            });
+            Product.products = Product.products.filter(
+              (p, index) => Number(numberPart) !== index
+            );
             console.log(Product.products);
             Product.historyUpdate();
+            displayHistoryItems();
           }
         }
       });
@@ -358,6 +388,9 @@ const myEditScript = (LZString, bootstrap) => {
                 let newDiscountAmount = document.querySelector(
                   "#yoichi-p-edit-setDiscountAmount"
                 ).value;
+                let newTextColor = normalizeTextColor(
+                  document.querySelector("#yoichi-p-edit-setTextColor").value
+                );
                 if (!newName) {
                   alert("商品名稱不可空白");
                   return p;
@@ -391,6 +424,7 @@ const myEditScript = (LZString, bootstrap) => {
                     0,
                     Number(newDiscountAmount || 0)
                   );
+                  p.textColor = newTextColor;
 
                   // 改變畫面
                   console.log(checkExist.parentElement);
@@ -406,6 +440,12 @@ const myEditScript = (LZString, bootstrap) => {
                   checkExist.parentElement.querySelector(
                     ".yoichi-p-field-discountAmount .yoichi-p-value"
                   ).innerText = p.discountAmount || 0;
+                  checkExist.parentElement.querySelector(
+                    ".yoichi-p-field-name .yoichi-p-value"
+                  ).style.color = p.textColor;
+                  checkExist.parentElement.querySelector(
+                    ".yoichi-p-field-textColor .yoichi-p-value"
+                  ).innerText = p.textColor;
                 }
               }
               return p;
@@ -413,6 +453,7 @@ const myEditScript = (LZString, bootstrap) => {
             console.log(Product.products);
             // 實踐更新
             Product.historyUpdate();
+            displayHistoryItems();
             // window.location.reload();
           }
         }

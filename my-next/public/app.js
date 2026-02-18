@@ -34,6 +34,12 @@ const myWorkScript = (LZString, bootstrap) => {
     }
   };
 
+  const normalizeTextColor = (value) => {
+    if (typeof value !== "string") return "#ff0000";
+    const normalized = value.trim();
+    return /^#[0-9a-fA-F]{6}$/.test(normalized) ? normalized : "#ff0000";
+  };
+
   const readWorkSettings = () => {
     if (isWorkSummaryDisabled) {
       return { showSummary: false };
@@ -80,11 +86,18 @@ const myWorkScript = (LZString, bootstrap) => {
   HTMLTime.t_showUp();
   class Product {
     static products = [];
-    constructor(name, price, discountQty = 0, discountAmount = 0) {
+    constructor(
+      name,
+      price,
+      discountQty = 0,
+      discountAmount = 0,
+      textColor = "#ff0000"
+    ) {
       this.name = name;
       this.price = price;
       this.discountQty = discountQty;
       this.discountAmount = discountAmount;
+      this.textColor = normalizeTextColor(textColor);
       Product.products.push(this);
     }
 
@@ -98,7 +111,7 @@ const myWorkScript = (LZString, bootstrap) => {
         return "沒歷史紀錄或短缺";
       }
       Product.products = [];
-      data.forEach(({ name, price, discountQty, discountAmount }) => {
+      data.forEach(({ name, price, discountQty, discountAmount, textColor }) => {
         let safeName = String(name || "").trim();
         let safePrice = Number(price);
         if (!safeName || !Number.isFinite(safePrice) || safePrice <= 0) {
@@ -108,7 +121,8 @@ const myWorkScript = (LZString, bootstrap) => {
           safeName,
           safePrice,
           Number(discountQty) || 0,
-          Number(discountAmount) || 0
+          Number(discountAmount) || 0,
+          normalizeTextColor(textColor)
         );
         // 這邊直接改變了所以才不用回傳!
       });
@@ -452,7 +466,9 @@ const myWorkScript = (LZString, bootstrap) => {
           }
         });
       }
-      section.innerHTML = `<label class="yoichi-p-name" for="yoichi-product-${index}">
+      section.innerHTML = `<label class="yoichi-p-name" for="yoichi-product-${index}" style="color:${normalizeTextColor(
+              product.textColor
+            )}">
               <p>${product.name}</p></label
             >
             <input

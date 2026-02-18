@@ -110,6 +110,13 @@ export default function Edit() {
                     id="yoichi-p-add-setDiscountAmount"
                     name="yoichi-p-add-setDiscountAmount"
                   />
+                  <label htmlFor="yoichi-p-add-setTextColor">文字顏色</label>
+                  <input
+                    type="color"
+                    id="yoichi-p-add-setTextColor"
+                    name="yoichi-p-add-setTextColor"
+                    defaultValue="#ff0000"
+                  />
                 </form>
               </div>
               <div className="modal-footer">
@@ -179,6 +186,13 @@ export default function Edit() {
                     type="text"
                     id="yoichi-p-edit-setDiscountAmount"
                     name="yoichi-p-edit-setDiscountAmount"
+                  />
+                  <label htmlFor="yoichi-p-edit-setTextColor">文字顏色</label>
+                  <input
+                    type="color"
+                    id="yoichi-p-edit-setTextColor"
+                    name="yoichi-p-edit-setTextColor"
+                    defaultValue="#ff0000"
                   />
                 </form>
               </div>
