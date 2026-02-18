@@ -299,27 +299,27 @@ const myHistoryScript = (LZString, bootstrap) => {
           orderDate,
           status,
         }) => {
-          Product.products = []; //前後都要清空 ， 我只是做map 創新物件。
-          PickedProduct.pickedProducts = [];
-          //  如果displayProducts有需求 則使用讀取後的Order.orders內的資訊去查詢才正確!
-          productsLog = productsLog.map(
-            ({ name, price, discountQty, discountAmount }) => {
-              return new Product(
-                name,
-                Number(price),
-                Number(discountQty) || 0,
-                Number(discountAmount) || 0
-              );
-            }
-          );
-          details = details.map(({ pickedName, pickedNumber }) => {
-            return new PickedProduct(pickedName, pickedNumber);
-          });
-          Product.products = [];
-          PickedProduct.pickedProducts = [];
+          const safeProductsLog = Array.isArray(productsLog)
+            ? productsLog.map(
+                ({ name, price, discountQty, discountAmount, textColor }) => ({
+                  name: normalizeProductName(name),
+                  price: Number(price),
+                  discountQty: Number(discountQty) || 0,
+                  discountAmount: Number(discountAmount) || 0,
+                  textColor: normalizeTextColor(textColor),
+                })
+              )
+            : [];
+          const safeDetails = Array.isArray(details)
+            ? details.map(({ pickedName, pickedNumber }) => ({
+                pickedName: normalizeProductName(pickedName),
+                pickedNumber,
+              }))
+            : [];
+
           return new Order(
-            productsLog,
-            details,
+            safeProductsLog,
+            safeDetails,
             totalPrice,
             orderTime,
             orderDate,
