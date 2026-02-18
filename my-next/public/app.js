@@ -837,17 +837,17 @@ const myWorkScript = (LZString, bootstrap) => {
         return;
       }
       let products = ``;
-      for (let name in sellLog) {
-        // console.log(sellLog[name], name);
-        // 3 '蔥肉串'
-        // 3 '香腸'
-        // 3 '豬肉串'
+      Product.products.forEach((product) => {
+        const soldQty = Number(sellLog[product.name]) || 0;
+        if (soldQty <= 0) return;
         products =
           products +
           ` <div class="order-detail">
-        <div class="order-p-name"><p>${name}</p></div>
-                <div class="order-p-number"><p>${sellLog[name]}</p></div> </div> `;
-      }
+        <div class="order-p-name"><p style="color:${normalizeTextColor(
+          product.textColor
+        )}">${product.name}</p></div>
+                <div class="order-p-number"><p>${soldQty}</p></div> </div> `;
+      });
       // console.log(fulfilledOrdersTotalAmount); // 345元
       let yoichi_order_shown = document.createElement("section");
       yoichi_order_shown.classList = "yoichi-order-shown";

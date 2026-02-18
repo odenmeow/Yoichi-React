@@ -146,8 +146,8 @@ const myEditScript = (LZString, bootstrap) => {
           `<div class="yoichi-p-controls">`,
           `<button type="button" class="btn btn-outline-secondary yoichi-p-move-up" data-index="${index}">上移</button>`,
           `<button type="button" class="btn btn-outline-secondary yoichi-p-move-down" data-index="${index}">下移</button>`,
-          `<button type="button" id="yoichi-p-show-edit-${index}" class="yoichi-p-show-edit btn btn-warning" data-bs-toggle="modal" data-bs-target="#Modal-edit-product">編輯</button>`,
           `<button type="button" class="btn btn-outline-primary yoichi-p-change-color" data-index="${index}">改色</button>`,
+          `<button type="button" id="yoichi-p-show-edit-${index}" class="yoichi-p-show-edit btn btn-warning" data-bs-toggle="modal" data-bs-target="#Modal-edit-product">編輯</button>`,
           `<input type="color" class="yoichi-p-color-picker d-none" value="${normalizeTextColor(
             textColor
           )}" data-index="${index}" />`,
