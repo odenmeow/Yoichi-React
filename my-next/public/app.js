@@ -336,7 +336,7 @@ const myWorkScript = (LZString, bootstrap) => {
   const setOrderNumberDisplay = (number) => {
     const p = document.querySelector(".yoichi-orderNumber p");
     if (!p) return;
-    p.textContent = `No.${Number(number) || 0}`;
+    p.textContent = `${Number(number) || 0}`;
   };
   const getOrderNumberDisplayValue = () => {
     const orderNumber = document.querySelector(".yoichi-orderNumber p");
