@@ -89,3 +89,14 @@ git grep -n "記住帳號\|getRememberedAccount\|setRememberedAccount\|normalize
 - `lib/viewCleanup.js`
 
 如果缺少其中任一個，通常代表衝突解決時有段落被覆蓋，請改回 incoming（或手動合併後保留這些功能）。
+## History 密碼鎖驗證（手動）
+
+為了避免只改數量沒按「生成」導致沒有歷史資料，請用以下流程驗證：
+
+1. 打開工作區 `/`，先在商品欄位填數量。
+2. 按下「生成」（`.yoichi-order-send`）建立訂單。
+3. 切到歷史頁 `/history`，應先出現密碼鎖遮罩。
+4. 輸入密碼 `11806` 解鎖後，確認：
+   - 上方有剛建立的訂單卡片。
+   - 下方日期區會出現當天日期（來自 `dateRecords`）。
+5. 切到其他頁籤或其他分頁，再切回歷史頁，應重新要求輸入密碼。
