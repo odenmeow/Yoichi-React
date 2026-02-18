@@ -149,10 +149,14 @@ const myHistoryScript = (LZString, bootstrap) => {
     static generateDefault() {
       Product.products = [];
       new Product("一串心", 20, 0, 0);
-      new Product("雞腿串", 60, 0, 0);
-      new Product("豬肉串", 40, 0, 0);
-      new Product("香腸", 40, 0, 0);
-      new Product("蔥肉串", 40, 0, 0);
+      new Product("雞腿串", 65, 0, 0);
+      new Product("豬肉串", 45, 0, 0);
+      new Product("香腸", 45, 0, 0);
+      new Product("蔥肉串", 45, 0, 0);
+      new Product("雞骨輪", 60, 2, 20);
+      new Product("雞屁股", 50, 0, 0);
+      new Product("雞心", 50, 0, 0);
+      new Product("米腸", 40, 0, 0);
       Product.historyUpdate();
     }
   }
@@ -288,14 +292,16 @@ const myHistoryScript = (LZString, bootstrap) => {
           Product.products = []; //前後都要清空 ， 我只是做map 創新物件。
           PickedProduct.pickedProducts = [];
           //  如果displayProducts有需求 則使用讀取後的Order.orders內的資訊去查詢才正確!
-          productsLog = productsLog.map(({ name, price, discountQty, discountAmount }) => {
-            return new Product(
-              name,
-              Number(price),
-              Number(discountQty) || 0,
-              Number(discountAmount) || 0
-            );
-          });
+          productsLog = productsLog.map(
+            ({ name, price, discountQty, discountAmount }) => {
+              return new Product(
+                name,
+                Number(price),
+                Number(discountQty) || 0,
+                Number(discountAmount) || 0
+              );
+            }
+          );
           details = details.map(({ pickedName, pickedNumber }) => {
             return new PickedProduct(pickedName, pickedNumber);
           });

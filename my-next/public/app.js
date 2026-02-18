@@ -127,10 +127,14 @@ const myWorkScript = (LZString, bootstrap) => {
     static generateDefault() {
       Product.products = [];
       new Product("一串心", 20, 0, 0);
-      new Product("雞腿串", 60, 0, 0);
-      new Product("豬肉串", 40, 0, 0);
-      new Product("香腸", 40, 0, 0);
-      new Product("蔥肉串", 40, 0, 0);
+      new Product("雞腿串", 65, 0, 0);
+      new Product("豬肉串", 45, 0, 0);
+      new Product("香腸", 45, 0, 0);
+      new Product("蔥肉串", 45, 0, 0);
+      new Product("雞骨輪", 60, 2, 20);
+      new Product("雞屁股", 50, 0, 0);
+      new Product("雞心", 50, 0, 0);
+      new Product("米腸", 40, 0, 0);
       Product.historyUpdate();
     }
   }

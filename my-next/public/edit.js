@@ -83,43 +83,54 @@ const myEditScript = (LZString, bootstrap) => {
     static generateDefault() {
       Product.products = [];
       new Product("一串心", 20, 0, 0);
-      new Product("雞腿串", 60, 0, 0);
-      new Product("豬肉串", 40, 0, 0);
-      new Product("香腸", 40, 0, 0);
-      new Product("蔥肉串", 40, 0, 0);
+      new Product("雞腿串", 65, 0, 0);
+      new Product("豬肉串", 45, 0, 0);
+      new Product("香腸", 45, 0, 0);
+      new Product("蔥肉串", 45, 0, 0);
+      new Product("雞骨輪", 60, 2, 20);
+      new Product("雞屁股", 50, 0, 0);
+      new Product("雞心", 50, 0, 0);
+      new Product("米腸", 40, 0, 0);
       Product.historyUpdate();
     }
   }
   function displayHistoryItems() {
-    safeForEach(Product.products, ({ name, price, discountQty, discountAmount }, index) => {
-      // 創造前先看有沒有存在目前畫面!
-      let checkExist = document.querySelector(`#yoichi-p-show-edit-${index}`);
-      if (checkExist) {
-      } else {
-        let p_shows = document.createElement("div");
-        p_shows.classList.add("yoichi-p-shows");
-        p_shows.innerHTML = [
-          `<div class="yoichi-p-show-meta">`,
-          `<div class="yoichi-p-field yoichi-p-field-name"><p class="yoichi-p-label">商品名稱</p><p class="yoichi-p-value">${name}</p></div>`,
-          `<div class="yoichi-p-field yoichi-p-field-price"><p class="yoichi-p-label">售價</p><p class="yoichi-p-value">${price}</p></div>`,
-          `<div class="yoichi-p-field yoichi-p-field-discountQty"><p class="yoichi-p-label">折扣數量</p><p class="yoichi-p-value">${discountQty || 0}</p></div>`,
-          `<div class="yoichi-p-field yoichi-p-field-discountAmount"><p class="yoichi-p-label">折扣金額</p><p class="yoichi-p-value">${discountAmount || 0}</p></div>`,
-          `</div>`,
-          `<button
+    safeForEach(
+      Product.products,
+      ({ name, price, discountQty, discountAmount }, index) => {
+        // 創造前先看有沒有存在目前畫面!
+        let checkExist = document.querySelector(`#yoichi-p-show-edit-${index}`);
+        if (checkExist) {
+        } else {
+          let p_shows = document.createElement("div");
+          p_shows.classList.add("yoichi-p-shows");
+          p_shows.innerHTML = [
+            `<div class="yoichi-p-show-meta">`,
+            `<div class="yoichi-p-field yoichi-p-field-name"><p class="yoichi-p-label">商品名稱</p><p class="yoichi-p-value">${name}</p></div>`,
+            `<div class="yoichi-p-field yoichi-p-field-price"><p class="yoichi-p-label">售價</p><p class="yoichi-p-value">${price}</p></div>`,
+            `<div class="yoichi-p-field yoichi-p-field-discountQty"><p class="yoichi-p-label">折扣數量</p><p class="yoichi-p-value">${
+              discountQty || 0
+            }</p></div>`,
+            `<div class="yoichi-p-field yoichi-p-field-discountAmount"><p class="yoichi-p-label">折扣金額</p><p class="yoichi-p-value">${
+              discountAmount || 0
+            }</p></div>`,
+            `</div>`,
+            `<button
         type="button"
         id="yoichi-p-show-edit-${index}"
         class="yoichi-p-show-edit btn btn-warning"
         data-bs-toggle="modal"
         data-bs-target="#Modal-edit-product"
       >`,
-          `編輯
+            `編輯
       </button>
     </div>`,
-        ].join("");
-        let container = document.querySelector("section.show-products");
-        container.append(p_shows);
+          ].join("");
+          let container = document.querySelector("section.show-products");
+          container.append(p_shows);
+        }
       }
-    });
+    );
   }
   // Step0  update variable of Product.products ( sync with history)
   // 模擬資料更新 或者 讀取歷史資料進來
@@ -183,7 +194,9 @@ const myEditScript = (LZString, bootstrap) => {
     btnAdd_save.addEventListener("click", (e) => {
       let nameInput = document.querySelector("#yoichi-p-add-setName");
       let priceInput = document.querySelector("#yoichi-p-add-setPrice");
-      let discountQtyInput = document.querySelector("#yoichi-p-add-setDiscountQty");
+      let discountQtyInput = document.querySelector(
+        "#yoichi-p-add-setDiscountQty"
+      );
       let discountAmountInput = document.querySelector(
         "#yoichi-p-add-setDiscountAmount"
       );
@@ -332,9 +345,9 @@ const myEditScript = (LZString, bootstrap) => {
                 let checkExist = document.querySelector(
                   `#yoichi-p-show-edit-${index}`
                 );
-                let newName = document.querySelector(
-                  "#yoichi-p-edit-setName"
-                ).value.trim();
+                let newName = document
+                  .querySelector("#yoichi-p-edit-setName")
+                  .value.trim();
 
                 let newPrice = document.querySelector(
                   "#yoichi-p-edit-setPrice"
@@ -432,7 +445,9 @@ const myEditScript = (LZString, bootstrap) => {
 
   (function setupWorkSummaryToggle() {
     const workSettingsKey = "yoichi-work-settings";
-    const summaryToggleBtn = document.querySelector(".yoichi-summary-toggle-btn");
+    const summaryToggleBtn = document.querySelector(
+      ".yoichi-summary-toggle-btn"
+    );
     if (!summaryToggleBtn) return;
 
     const normalizeSettings = (settings) => {
