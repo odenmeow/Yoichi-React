@@ -339,7 +339,7 @@ const myWorkScript = (LZString, bootstrap) => {
     p.textContent = `No.${Number(number) || 0}`;
   };
   const getOrderNumberDisplayValue = () => {
-    const orderNumber = document.querySelector(".yoichi-orderNumber");
+    const orderNumber = document.querySelector(".yoichi-orderNumber p");
     if (!orderNumber) return 0;
     const matched = String(orderNumber.innerText || "").match(/\d+/);
     return matched ? Number(matched[0]) : 0;
