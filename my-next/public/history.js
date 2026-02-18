@@ -8,6 +8,12 @@ const myHistoryScript = (LZString, bootstrap) => {
   let lockOverlay;
   let lockInput;
 
+  const normalizeTextColor = (value) => {
+    if (typeof value !== "string") return "#ff0000";
+    const normalized = value.trim();
+    return /^#[0-9a-fA-F]{6}$/.test(normalized) ? normalized : "#ff0000";
+  };
+
   const setHistoryLocked = (locked) => {
     document.body.classList.toggle("yoichi-history-locked", locked);
     if (!lockOverlay) {
@@ -106,11 +112,12 @@ const myHistoryScript = (LZString, bootstrap) => {
 
   class Product {
     static products = [];
-    constructor(name, price, discountQty = 0, discountAmount = 0) {
+    constructor(name, price, discountQty = 0, discountAmount = 0, textColor = "#ff0000") {
       this.name = name;
       this.price = price;
       this.discountQty = discountQty;
       this.discountAmount = discountAmount;
+      this.textColor = normalizeTextColor(textColor);
       Product.products.push(this);
     }
 
@@ -124,7 +131,7 @@ const myHistoryScript = (LZString, bootstrap) => {
         return "沒歷史紀錄或短缺";
       }
       Product.products = [];
-      data.forEach(({ name, price, discountQty, discountAmount }) => {
+      data.forEach(({ name, price, discountQty, discountAmount, textColor }) => {
         let safeName = String(name || "").trim();
         let safePrice = Number(price);
         if (!safeName || !Number.isFinite(safePrice) || safePrice <= 0) {
@@ -134,7 +141,8 @@ const myHistoryScript = (LZString, bootstrap) => {
           safeName,
           safePrice,
           Number(discountQty) || 0,
-          Number(discountAmount) || 0
+          Number(discountAmount) || 0,
+          normalizeTextColor(textColor)
         );
         // 這邊直接改變了所以才不用回傳!
       });
@@ -354,6 +362,39 @@ const myHistoryScript = (LZString, bootstrap) => {
       }
     }
   }
+  const getProductOrderMeta = () => {
+    const productIndexMap = new Map();
+    const productColorMap = new Map();
+    Product.products.forEach((product, index) => {
+      productIndexMap.set(product.name, index);
+      productColorMap.set(product.name, normalizeTextColor(product.textColor));
+    });
+    return { productIndexMap, productColorMap };
+  };
+
+  const sortPickedDetailsByProductOrder = (details = [], productIndexMap) =>
+    [...details].sort((a, b) => {
+      const ai = productIndexMap.has(a.pickedName)
+        ? productIndexMap.get(a.pickedName)
+        : Number.MAX_SAFE_INTEGER;
+      const bi = productIndexMap.has(b.pickedName)
+        ? productIndexMap.get(b.pickedName)
+        : Number.MAX_SAFE_INTEGER;
+      if (ai === bi) return String(a.pickedName).localeCompare(String(b.pickedName));
+      return ai - bi;
+    });
+
+  const buildOrderDetailsHtml = (details = [], productColorMap) =>
+    details
+      .map(
+        (pick) => ` <div class="order-detail">
+        <div class="order-p-name"><p style="color:${
+          productColorMap.get(pick.pickedName) || "inherit"
+        }">${pick.pickedName}</p></div>
+                <div class="order-p-number"><p>${pick.pickedNumber}</p></div> </div> `
+      )
+      .join("");
+
   // 會顯示所有狀態的版本
   function loadOrderPage(date) {
     let orderScreen = document.querySelector(".presentation-Area");
@@ -361,16 +402,14 @@ const myHistoryScript = (LZString, bootstrap) => {
     orderScreen.innerHTML = "";
     let sellLog = {};
     let fulfilledOrdersTotalAmount = 0;
+    const { productIndexMap, productColorMap } = getProductOrderMeta();
     (function create_NotFulfilled_Orders() {
       Order.orders.forEach((order, index) => {
-        let products = ``;
-        order.details.forEach((pick) => {
-          products =
-            products +
-            ` <div class="order-detail">
-        <div class="order-p-name"><p>${pick.pickedName}</p></div>
-                <div class="order-p-number"><p>${pick.pickedNumber}</p></div> </div> `;
-        });
+        const sortedDetails = sortPickedDetailsByProductOrder(
+          order.details,
+          productIndexMap
+        );
+        const products = buildOrderDetailsHtml(sortedDetails, productColorMap);
         let yoichi_order_shown = document.createElement("section");
         yoichi_order_shown.classList = "yoichi-order-shown";
         let btnMsg = "按我";
@@ -390,7 +429,7 @@ const myHistoryScript = (LZString, bootstrap) => {
           btnMsg = "完成";
           btnColor = "info";
           // console.log("訂單", index);
-          order.details.forEach((p) => {
+          sortedDetails.forEach((p) => {
             if (sellLog[p.pickedName] == undefined) {
               sellLog[p.pickedName] = Number(p.pickedNumber);
             } else {
@@ -446,17 +485,17 @@ const myHistoryScript = (LZString, bootstrap) => {
     })();
     (function create_fulfilledOrdersSummary() {
       let products = ``;
-      for (let name in sellLog) {
-        // console.log(sellLog[name], name);
-        // 3 '蔥肉串'
-        // 3 '香腸'
-        // 3 '豬肉串'
+      Product.products.forEach((product) => {
+        const soldQty = Number(sellLog[product.name]) || 0;
+        if (soldQty <= 0) return;
         products =
           products +
           ` <div class="order-detail">
-        <div class="order-p-name"><p>${name}</p></div>
-                <div class="order-p-number"><p>${sellLog[name]}</p></div> </div> `;
-      }
+        <div class="order-p-name"><p style="color:${normalizeTextColor(
+          product.textColor
+        )}">${product.name}</p></div>
+                <div class="order-p-number"><p>${soldQty}</p></div> </div> `;
+      });
       // console.log(fulfilledOrdersTotalAmount); // 345元
       let yoichi_order_shown = document.createElement("section");
       yoichi_order_shown.classList = "yoichi-order-shown";
