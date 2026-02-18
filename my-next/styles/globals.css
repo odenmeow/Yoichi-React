@@ -744,7 +744,8 @@ main section.show-products .yoichi-p-controls {
   gap: 0.5rem;
 }
 
-main section.show-products .yoichi-p-shows > div {
+main section.show-products .yoichi-p-shows > .yoichi-p-show-meta,
+main section.show-products .yoichi-p-shows > .yoichi-p-show-edit-title {
   display: flex;
 }
 
