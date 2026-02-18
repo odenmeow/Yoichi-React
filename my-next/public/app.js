@@ -46,7 +46,9 @@ const myWorkScript = (LZString, bootstrap) => {
   };
 
   const applyWorkSummaryVisibility = () => {
-    const presentationArea = document.querySelector("section.presentation-Area");
+    const presentationArea = document.querySelector(
+      "section.presentation-Area"
+    );
     if (!presentationArea) return;
     const { showSummary } = readWorkSettings();
     presentationArea.classList.toggle("yoichi-hide-card-summary", !showSummary);
@@ -267,14 +269,16 @@ const myWorkScript = (LZString, bootstrap) => {
           Product.products = []; //前後都要清空 ， 我只是做map 創新物件。
           PickedProduct.pickedProducts = [];
           //  如果displayProducts有需求 則使用讀取後的Order.orders內的資訊去查詢才正確!
-          productsLog = productsLog.map(({ name, price, discountQty, discountAmount }) => {
-            return new Product(
-              name,
-              Number(price),
-              Number(discountQty) || 0,
-              Number(discountAmount) || 0
-            );
-          });
+          productsLog = productsLog.map(
+            ({ name, price, discountQty, discountAmount }) => {
+              return new Product(
+                name,
+                Number(price),
+                Number(discountQty) || 0,
+                Number(discountAmount) || 0
+              );
+            }
+          );
           details = details.map(({ pickedName, pickedNumber }) => {
             return new PickedProduct(pickedName, pickedNumber);
           });
@@ -296,10 +300,7 @@ const myWorkScript = (LZString, bootstrap) => {
       let { dateStr } = generateTime();
       Order.orders = Order.orders.filter((order) => order.orderDate == dateStr);
       let itemKey = `yoichiOrders-${dateStr}`;
-      safeStorageSet(
-        itemKey,
-        LZString.compress(JSON.stringify(Order.orders))
-      );
+      safeStorageSet(itemKey, LZString.compress(JSON.stringify(Order.orders)));
       // 也添加LZString 壓縮功能!
       let dateRecords = safeStorageGet("dateRecords");
       if (dateRecords == null || dateRecords.includes(null)) {
@@ -332,11 +333,10 @@ const myWorkScript = (LZString, bootstrap) => {
     }
   }
 
-
   const setOrderNumberDisplay = (number) => {
-    const orderNumber = document.querySelector(".yoichi-orderNumber");
-    if (!orderNumber) return;
-    orderNumber.innerText = `No.${Number(number) || 0}`;
+    const p = document.querySelector(".yoichi-orderNumber p");
+    if (!p) return;
+    p.textContent = `No.${Number(number) || 0}`;
   };
   const getOrderNumberDisplayValue = () => {
     const orderNumber = document.querySelector(".yoichi-orderNumber");
