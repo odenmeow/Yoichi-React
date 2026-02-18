@@ -14,6 +14,8 @@ const myHistoryScript = (LZString, bootstrap) => {
     return /^#[0-9a-fA-F]{6}$/.test(normalized) ? normalized : "#ff0000";
   };
 
+  const normalizeProductName = (value) => String(value || "").trim();
+
   const setHistoryLocked = (locked) => {
     document.body.classList.toggle("yoichi-history-locked", locked);
     if (!lockOverlay) {
@@ -366,21 +368,26 @@ const myHistoryScript = (LZString, bootstrap) => {
     const productIndexMap = new Map();
     const productColorMap = new Map();
     Product.products.forEach((product, index) => {
-      productIndexMap.set(product.name, index);
-      productColorMap.set(product.name, normalizeTextColor(product.textColor));
+      productIndexMap.set(normalizeProductName(product.name), index);
+      productColorMap.set(
+        normalizeProductName(product.name),
+        normalizeTextColor(product.textColor)
+      );
     });
     return { productIndexMap, productColorMap };
   };
 
   const sortPickedDetailsByProductOrder = (details = [], productIndexMap) =>
     [...details].sort((a, b) => {
-      const ai = productIndexMap.has(a.pickedName)
-        ? productIndexMap.get(a.pickedName)
+      const aName = normalizeProductName(a.pickedName);
+      const bName = normalizeProductName(b.pickedName);
+      const ai = productIndexMap.has(aName)
+        ? productIndexMap.get(aName)
         : Number.MAX_SAFE_INTEGER;
-      const bi = productIndexMap.has(b.pickedName)
-        ? productIndexMap.get(b.pickedName)
+      const bi = productIndexMap.has(bName)
+        ? productIndexMap.get(bName)
         : Number.MAX_SAFE_INTEGER;
-      if (ai === bi) return String(a.pickedName).localeCompare(String(b.pickedName));
+      if (ai === bi) return aName.localeCompare(bName);
       return ai - bi;
     });
 
@@ -389,7 +396,7 @@ const myHistoryScript = (LZString, bootstrap) => {
       .map(
         (pick) => ` <div class="order-detail">
         <div class="order-p-name"><p style="color:${
-          productColorMap.get(pick.pickedName) || "inherit"
+          productColorMap.get(normalizeProductName(pick.pickedName)) || "inherit"
         }">${pick.pickedName}</p></div>
                 <div class="order-p-number"><p>${pick.pickedNumber}</p></div> </div> `
       )
@@ -430,10 +437,11 @@ const myHistoryScript = (LZString, bootstrap) => {
           btnColor = "info";
           // console.log("訂單", index);
           sortedDetails.forEach((p) => {
-            if (sellLog[p.pickedName] == undefined) {
-              sellLog[p.pickedName] = Number(p.pickedNumber);
+            const pickedName = normalizeProductName(p.pickedName);
+            if (sellLog[pickedName] == undefined) {
+              sellLog[pickedName] = Number(p.pickedNumber);
             } else {
-              sellLog[p.pickedName] += Number(p.pickedNumber);
+              sellLog[pickedName] += Number(p.pickedNumber);
               // console.log("選取數量", sellLog[p.pickedName]);
             }
           });
@@ -486,7 +494,7 @@ const myHistoryScript = (LZString, bootstrap) => {
     (function create_fulfilledOrdersSummary() {
       let products = ``;
       Product.products.forEach((product) => {
-        const soldQty = Number(sellLog[product.name]) || 0;
+        const soldQty = Number(sellLog[normalizeProductName(product.name)]) || 0;
         if (soldQty <= 0) return;
         products =
           products +
