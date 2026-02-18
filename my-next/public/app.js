@@ -40,6 +40,40 @@ const myWorkScript = (LZString, bootstrap) => {
     return /^#[0-9a-fA-F]{6}$/.test(normalized) ? normalized : "#ff0000";
   };
 
+
+  const getProductOrderMeta = () => {
+    const productIndexMap = new Map();
+    const productColorMap = new Map();
+    Product.products.forEach((product, index) => {
+      productIndexMap.set(product.name, index);
+      productColorMap.set(product.name, normalizeTextColor(product.textColor));
+    });
+    return { productIndexMap, productColorMap };
+  };
+
+  const sortPickedDetailsByProductOrder = (details = [], productIndexMap) =>
+    [...details].sort((a, b) => {
+      const ai = productIndexMap.has(a.pickedName)
+        ? productIndexMap.get(a.pickedName)
+        : Number.MAX_SAFE_INTEGER;
+      const bi = productIndexMap.has(b.pickedName)
+        ? productIndexMap.get(b.pickedName)
+        : Number.MAX_SAFE_INTEGER;
+      if (ai === bi) return String(a.pickedName).localeCompare(String(b.pickedName));
+      return ai - bi;
+    });
+
+  const buildOrderDetailsHtml = (details = [], productColorMap) =>
+    details
+      .map(
+        (pick) => ` <div class="order-detail">
+        <div class="order-p-name"><p style="color:${
+          productColorMap.get(pick.pickedName) || "inherit"
+        }">${pick.pickedName}</p></div>
+                <div class="order-p-number"><p>${pick.pickedNumber}</p></div> </div> `
+      )
+      .join("");
+
   const readWorkSettings = () => {
     if (isWorkSummaryDisabled) {
       return { showSummary: false };
@@ -759,16 +793,14 @@ const myWorkScript = (LZString, bootstrap) => {
     orderScreen.innerHTML = "";
     let sellLog = {};
     let fulfilledOrdersTotalAmount = 0;
+    const { productIndexMap, productColorMap } = getProductOrderMeta();
     (function create_NotFulfilled_Orders() {
       Order.orders.forEach((order, index) => {
-        let products = ``;
-        order.details.forEach((pick) => {
-          products =
-            products +
-            ` <div class="order-detail">
-        <div class="order-p-name"><p>${pick.pickedName}</p></div>
-                <div class="order-p-number"><p>${pick.pickedNumber}</p></div> </div> `;
-        });
+        const sortedDetails = sortPickedDetailsByProductOrder(
+          order.details,
+          productIndexMap
+        );
+        const products = buildOrderDetailsHtml(sortedDetails, productColorMap);
         let yoichi_order_shown = document.createElement("section");
         yoichi_order_shown.classList = "yoichi-order-shown";
         let btnMsg = "按我";
@@ -780,7 +812,7 @@ const myWorkScript = (LZString, bootstrap) => {
         }
         if (order.status == "fulfilled") {
           // console.log("訂單", index);
-          order.details.forEach((p) => {
+          sortedDetails.forEach((p) => {
             if (sellLog[p.pickedName] == undefined) {
               sellLog[p.pickedName] = Number(p.pickedNumber);
             } else {
