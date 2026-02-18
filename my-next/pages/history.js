@@ -6,9 +6,11 @@ import myHistoryScript from "../public/history";
 import Link from "next/link";
 import {
   getCurrentMember,
+  getRememberedAccount,
   loginMember,
   logoutMember,
   logoutWhenHidden,
+  setRememberedAccount,
 } from "../lib/memberAuth";
 import { normalizeAppInteraction } from "../lib/viewCleanup";
 
@@ -19,10 +21,16 @@ export default function History() {
   const [allowed, setAllowed] = useState(false);
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberAccount, setRememberAccount] = useState(true);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
     normalizeAppInteraction();
+    const remembered = getRememberedAccount();
+    if (remembered) {
+      setAccount(remembered);
+      setRememberAccount(true);
+    }
     const timer = setInterval(normalizeAppInteraction, 700);
     return () => clearInterval(timer);
   }, []);
@@ -87,6 +95,11 @@ export default function History() {
     const result = loginMember(account, password);
     setMessage(result.message);
     if (result.ok) {
+      if (rememberAccount) {
+        setRememberedAccount(account);
+      } else {
+        setRememberedAccount("");
+      }
       setPassword("");
       sessionStorage.setItem(HISTORY_ENTRY_FLAG, "1");
       setAllowed(true);
@@ -146,6 +159,14 @@ export default function History() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              <label style={{ display: "flex", alignItems: "center", gap: "0.45rem", marginBottom: 0 }}>
+                <input
+                  type="checkbox"
+                  checked={rememberAccount}
+                  onChange={(e) => setRememberAccount(e.target.checked)}
+                />
+                記住帳號
+              </label>
               <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
                 <button className="btn btn-primary" onClick={handleLogin}>
                   登入並查看

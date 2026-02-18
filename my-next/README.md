@@ -55,6 +55,40 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
 
+## 目前正確的歷史驗證流程（會員帳密版）
+
+> 歷史頁不再使用固定密碼 11806 解鎖遮罩；改成會員帳號/密碼登入。
+
+1. 打開工作區 `/`。
+2. 先按商品數量（例如按 `+1`），再按「送出 / 生成」（`.yoichi-order-send`）建立訂單。
+3. 前往 `/history`。
+4. 如果不是從會員後台帶入，會看到「帳號 / 密碼」登入表單。
+5. 登入成功後應看到：
+   - 上方歷史訂單卡片。
+   - 下方日期區塊（`dateRecords`）。
+
+## 記住帳號功能
+
+- 會員頁 `/member` 與歷史頁 `/history` 的登入表單都有 `記住帳號`。
+- 勾選後登入，下次會自動帶入上次帳號。
+- 取消勾選後登入，會清除已記住帳號。
+
+## 衝突後自我檢查（避免選錯 current/incoming）
+
+如果你剛解過 merge conflict，請在 `my-next` 目錄確認：
+
+```bash
+git grep -n "記住帳號\|getRememberedAccount\|setRememberedAccount\|normalizeAppInteraction"
+```
+
+至少要看到這幾個檔案有命中：
+- `pages/member.js`
+- `pages/history.js`
+- `lib/memberAuth.js`
+- `pages/_app.js`
+- `lib/viewCleanup.js`
+
+如果缺少其中任一個，通常代表衝突解決時有段落被覆蓋，請改回 incoming（或手動合併後保留這些功能）。
 ## History 密碼鎖驗證（手動）
 
 為了避免只改數量沒按「生成」導致沒有歷史資料，請用以下流程驗證：
