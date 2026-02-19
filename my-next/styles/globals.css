@@ -11,6 +11,16 @@
   box-sizing: border-box;
 }
 
+:root {
+  --yoichi-card-cell-scale: 1.3;
+  --yoichi-action-menu-width: 224px;
+  --yoichi-action-menu-button-height: 48px;
+  --yoichi-action-menu-badge-scale: 1;
+  --yoichi-note-panel-width: 96vw;
+  --yoichi-note-panel-height: 90vh;
+  --yoichi-note-save-height: 64px;
+}
+
 body main section.cal-Area {
   position: relative;
   border: 3px blue solid;
@@ -361,6 +371,13 @@ body main section.presentation-Area .yoichi-order-shown {
   flex-basis: 25%;
   flex-shrink: 0;
 }
+
+body main section.presentation-Area .yoichi-order-shown.yoichi-order-summary-sticky {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: #f8fafc;
+}
 body main section.presentation-Area .yoichi-order-shown div.yoichi-card {
   border: 2px green solid;
   width: 100%;
@@ -463,7 +480,7 @@ body
   div.yoichi-card
   .yoichi-card-order-detail
   .order-detail {
-  height: 10%;
+  min-height: calc(2.4rem * var(--yoichi-card-cell-scale));
   display: flex;
 }
 body
@@ -481,7 +498,8 @@ body
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: large;
+  font-size: calc(1.1rem * var(--yoichi-card-cell-scale));
+  padding: calc(0.12rem * var(--yoichi-card-cell-scale));
 }
 body
   main
@@ -509,6 +527,8 @@ body
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: calc(1.1rem * var(--yoichi-card-cell-scale));
+  padding: calc(0.12rem * var(--yoichi-card-cell-scale));
 }
 body
   main
@@ -569,6 +589,17 @@ body
   p::after {
   content: "元";
 }
+
+body
+  main
+  section.presentation-Area
+  .yoichi-order-shown.yoichi-order-summary-sticky
+  div.yoichi-card
+  div.yoichi-card-bottom
+  div.order-total-price
+  p::after {
+  content: "";
+}
 body
   main
   section.presentation-Area
@@ -627,13 +658,15 @@ aside.floating-element a {
 
 .popover-header {
   text-align: center;
+  font-size: calc(1rem * var(--yoichi-action-menu-badge-scale));
+  padding: calc(0.35rem * var(--yoichi-action-menu-badge-scale));
 }
 
 .popover-body {
   position: relative;
-  width: 15rem;
+  width: var(--yoichi-action-menu-width);
   padding: 0rem;
-  height: 5rem;
+  min-height: var(--yoichi-action-menu-button-height);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -653,6 +686,7 @@ aside.floating-element a {
 }
 .popover-body .fulfillOrder button {
   border-radius: 0 0 0 12%;
+  min-height: var(--yoichi-action-menu-button-height);
   height: 100%;
   width: 100%;
 }
@@ -670,6 +704,7 @@ aside.floating-element a {
   margin-bottom: 1px;
 }
 .popover-body .reviseOrder button {
+  min-height: var(--yoichi-action-menu-button-height);
   height: 100%;
   width: 100%;
 }
@@ -689,12 +724,61 @@ aside.floating-element a {
 }
 .popover-body .paidOrder button {
   border-radius: 0 0 12% 0;
+  min-height: var(--yoichi-action-menu-button-height);
   height: 100%;
   width: 100%;
 }
 .popover-body .paidOrder button:active {
   transform: translateY(1px); /* 向下移動 2px，模擬按下效果 */
   box-shadow: 0px 0px 5px 0px #61f477;
+}
+
+.order-buttonMotion {
+  position: relative;
+}
+
+.yoichi-order-action-menu {
+  position: absolute;
+  bottom: calc(100% + 0.45rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  width: var(--yoichi-action-menu-width);
+  border: 2px solid #111827;
+  border-radius: 10px;
+  overflow: visible;
+  background: #f3f4f6;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.22);
+}
+
+.yoichi-order-action-header {
+  position: absolute;
+  top: -1.15rem;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 3rem;
+  text-align: center;
+  font-size: calc(0.9rem * var(--yoichi-action-menu-badge-scale));
+  line-height: 1;
+  padding: calc(0.2rem * var(--yoichi-action-menu-badge-scale))
+    calc(0.45rem * var(--yoichi-action-menu-badge-scale));
+  border: 2px solid #111827;
+  border-radius: 999px;
+  background: #f9fafb;
+}
+
+.yoichi-order-action-row {
+  display: flex;
+}
+
+.yoichi-order-action-row button {
+  flex: 1;
+  border-right: 1px solid #cbd5e1;
+  min-height: var(--yoichi-action-menu-button-height);
+}
+
+.yoichi-order-action-row button:last-child {
+  border-right: 0;
 }
 
 @keyframes opacityTransitions {
@@ -744,7 +828,8 @@ main section.show-products .yoichi-p-controls {
   gap: 0.5rem;
 }
 
-main section.show-products .yoichi-p-shows > div {
+main section.show-products .yoichi-p-shows > .yoichi-p-show-meta,
+main section.show-products .yoichi-p-shows > .yoichi-p-show-edit-title {
   display: flex;
 }
 
@@ -903,3 +988,149 @@ aside.floating-element button {
     transform: scale(0);
   }
 } /*# sourceMappingURL=styleEdit.css.map */
+
+.yoichi-order-note-trigger {
+  cursor: pointer;
+  user-select: none;
+}
+
+.yoichi-order-note-trigger p {
+  pointer-events: none;
+}
+
+.order-p-name.yoichi-has-note {
+  background: #fef3c7;
+}
+
+.yoichi-note-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  pointer-events: auto;
+}
+
+.yoichi-note-modal-panel {
+  width: min(var(--yoichi-note-panel-width), 1200px);
+  max-height: var(--yoichi-note-panel-height);
+  background: #fff;
+  border-radius: 12px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+}
+
+.yoichi-note-modal-header,
+.yoichi-note-modal-footer {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.yoichi-note-modal-footer {
+  border-bottom: 0;
+  border-top: 1px solid #e5e7eb;
+  justify-content: stretch;
+  padding: 0;
+}
+
+.yoichi-note-save {
+  width: 100%;
+  min-height: var(--yoichi-note-save-height);
+  border-radius: 0;
+  font-size: 1.3rem;
+}
+
+:root.yoichi-note-save-mode-right .yoichi-note-modal-footer {
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+}
+
+:root.yoichi-note-save-mode-right .yoichi-note-save {
+  width: auto;
+  min-width: 11rem;
+  border-radius: 8px;
+}
+
+.yoichi-note-modal-title {
+  margin: 0;
+}
+
+.yoichi-note-modal-body {
+  overflow: auto;
+  padding: 0.5rem;
+}
+
+.yoichi-note-grid-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.yoichi-note-grid-table th,
+.yoichi-note-grid-table td {
+  border: 1px solid #cbd5e1;
+  text-align: center;
+  padding: 0.35rem;
+  min-width: 72px;
+}
+
+.yoichi-note-grid-table th:first-child,
+.yoichi-note-grid-table td:first-child {
+  min-width: 130px;
+  position: sticky;
+  left: 0;
+  background: #fff;
+  z-index: 1;
+}
+
+.yoichi-note-cell-btn {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #374151;
+  background: #fff;
+}
+
+.yoichi-note-cell-btn.is-selected {
+  background: #111827;
+}
+
+
+.order-time.yoichi-order-global-note-trigger {
+  cursor: pointer;
+}
+
+.order-time.yoichi-has-global-note {
+  background: #dcfce7 !important;
+}
+
+.order-p-name.yoichi-has-global-note {
+  background: #dcfce7;
+}
+
+.yoichi-note-modal.yoichi-note-modal--picker,
+.yoichi-note-modal.yoichi-note-modal--picker * {
+  touch-action: manipulation;
+}
+
+.yoichi-note-modal.yoichi-note-modal--picker .yoichi-note-modal-body,
+.yoichi-note-modal.yoichi-note-modal--picker .yoichi-note-grid-wrap,
+.yoichi-note-modal.yoichi-note-modal--picker .yoichi-note-grid-table,
+.yoichi-note-modal.yoichi-note-modal--picker .yoichi-note-cell-btn {
+  touch-action: none;
+}
+
+.yoichi-note-modal.yoichi-note-modal--picker .yoichi-note-modal-body {
+  overscroll-behavior: contain;
+}
+
+.yoichi-note-modal.yoichi-note-modal--settings .yoichi-note-modal-body {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: auto;
+}

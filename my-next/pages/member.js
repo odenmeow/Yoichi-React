@@ -100,6 +100,55 @@ export default function Member() {
     sessionStorage.removeItem(HISTORY_ENTRY_FLAG);
   };
 
+  const getTodayOrderKey = () => {
+    const now = new Date();
+    const dateOptions = {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: "Asia/Taipei",
+    };
+    const dateStr = now.toLocaleDateString("zh-TW", dateOptions);
+    return `yoichiOrders-${dateStr}`;
+  };
+
+  const handleClearTodayOrders = () => {
+    if (!member) {
+      setMessage("請先登入");
+      return;
+    }
+    const confirmed = window.confirm("確定要清除今日訂單嗎？此動作無法復原。");
+    if (!confirmed) return;
+    const pwd = window.prompt("請再次輸入密碼確認");
+    if (pwd == null) return;
+    const verify = loginMember(member.id, pwd);
+    if (!verify.ok) {
+      setMessage("密碼錯誤，未清除");
+      return;
+    }
+
+    const todayKey = getTodayOrderKey();
+    try {
+      localStorage.removeItem(todayKey);
+      localStorage.removeItem("yoichiOrder");
+      localStorage.removeItem("yoichiHistoryOrder");
+      const dateRecordsRaw = localStorage.getItem("dateRecords");
+      if (dateRecordsRaw) {
+        const records = JSON.parse(dateRecordsRaw);
+        if (Array.isArray(records)) {
+          localStorage.setItem(
+            "dateRecords",
+            JSON.stringify(records.filter((key) => key !== todayKey))
+          );
+        }
+      }
+      setMessage("今日訂單已清除");
+    } catch (error) {
+      console.warn("清除今日訂單失敗", error);
+      setMessage("清除失敗，請稍後再試");
+    }
+  };
+
   return (
     <div>
       <Head>
@@ -182,6 +231,13 @@ export default function Member() {
                 </button>
                 <button className="btn btn-outline-danger" onClick={handleLogout}>
                   登出
+                </button>
+                <button
+                  className="btn btn-outline-warning"
+                  type="button"
+                  onClick={handleClearTodayOrders}
+                >
+                  清除今日訂單
                 </button>
               </div>
 
