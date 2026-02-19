@@ -1277,7 +1277,15 @@ const myWorkScript = (LZString, bootstrap) => {
                 <p>${order.totalPrice}</p>
               </div>
               <div class="order-buttonMotion">
-                <button type="button"  data-bs-custom-class="custom-popover" data-bs-placement="top"  class="yoichi-triplebtn btn btn-lg btn-${btnColor}" data-bs-toggle="popover" data-bs-title="${index}" data-bs-content="生成中...">${btnMsg}</button>
+                <button type="button" class="yoichi-triplebtn btn btn-lg btn-${btnColor}" data-order-index="${index}">${btnMsg}</button>
+                <div class="yoichi-order-action-menu d-none" data-order-index="${index}">
+                  <div class="yoichi-order-action-header">${index}</div>
+                  <div class="yoichi-order-action-row">
+                    <button type="button" class="yoichi-menu-fulfill">完成</button>
+                    <button type="button" class="yoichi-menu-revise">修改</button>
+                    <button type="button" class="yoichi-menu-paid">${order.status == "paid" ? "取消付款" : "付款"}</button>
+                  </div>
+                </div>
 
               </div>
             </div>
@@ -1440,8 +1448,9 @@ const myWorkScript = (LZString, bootstrap) => {
               }
             });
           }
-        });
+        }
       });
+    };
 
       observer.observe(btn, { attributes: true });
       popoverObservers.push(observer);
