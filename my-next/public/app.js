@@ -43,19 +43,31 @@ const myWorkScript = (LZString, bootstrap) => {
   const normalizeProductName = (value) => String(value || "").trim();
 
   const NOTE_OPTIONS_DEFAULT = [
-    { id: "normal", label: "普", color: "#111827" },
-    { id: "noSesame", label: "不芝麻", color: "#111827" },
-    { id: "noPepper", label: "不胡椒", color: "#111827" },
-    { id: "sesameMore", label: "芝麻多", color: "#111827" },
-    { id: "sesameLess", label: "芝麻少", color: "#111827" },
-    { id: "pepperMore", label: "胡椒多", color: "#111827" },
-    { id: "pepperLess", label: "胡椒少", color: "#111827" },
-    { id: "veryMild", label: "微微辣", color: "#111827", group: "spice" },
-    { id: "mild", label: "微辣", color: "#111827", group: "spice" },
-    { id: "small", label: "小辣", color: "#111827", group: "spice" },
-    { id: "medium", label: "中辣", color: "#111827", group: "spice" },
-    { id: "large", label: "大辣", color: "#111827", group: "spice" },
+    { id: "normal", label: "普", color: "#111827", group: "" },
+    { id: "noSesame", label: "不芝麻", color: "#78eaf2", group: "" },
+    { id: "noPepper", label: "不胡椒", color: "#80f5e7", group: "" },
+    { id: "sesameMore", label: "芝麻多", color: "#9ebeff", group: "sesame" },
+    { id: "sesameLess", label: "芝麻少", color: "#99b6ff", group: "sesame" },
+    { id: "pepperMore", label: "胡椒多", color: "#111827", group: "pepper" },
+    { id: "pepperLess", label: "胡椒少", color: "#111827", group: "pepper" },
+    { id: "veryMild", label: "微微辣", color: "#ffd270", group: "spice" },
+    { id: "mild", label: "微辣", color: "#ffa55c", group: "spice" },
+    { id: "small", label: "小辣", color: "#ffb1a3", group: "spice" },
+    { id: "medium", label: "中辣", color: "#ff6c52", group: "spice" },
+    { id: "large", label: "大辣", color: "#ff1100", group: "spice" },
   ];
+
+  const applyCardCellScale = () => {
+    const raw = safeStorageGet("yoichi-card-cell-scale");
+    const parsed = Number(raw);
+    const scale = Number.isFinite(parsed)
+      ? Math.min(2, Math.max(1, Number(parsed.toFixed(2))))
+      : 1.3;
+    document.documentElement.style.setProperty(
+      "--yoichi-card-cell-scale",
+      String(scale)
+    );
+  };
 
   const getNoteOptions = () => {
     const saved = safeParseJSON(safeStorageGet("yoichi-note-options"));
@@ -120,6 +132,7 @@ const myWorkScript = (LZString, bootstrap) => {
     Array.from({ length: qty }, () => ({ normal: true }));
 
   let noteModalState = null;
+  let popoverObservers = [];
 
   const getAlphabetLabel = (index) => {
     let n = Number(index) || 0;
@@ -388,6 +401,17 @@ const myWorkScript = (LZString, bootstrap) => {
       trigger.removeAttribute("aria-describedby");
     });
     document.querySelectorAll(".popover").forEach((el) => el.remove());
+  };
+
+  const resetPopoverObservers = () => {
+    popoverObservers.forEach((observer) => {
+      try {
+        observer.disconnect();
+      } catch (error) {
+        console.warn("popover observer disconnect 失敗", error);
+      }
+    });
+    popoverObservers = [];
   };
 
   const getProductOrderMeta = () => {
@@ -772,6 +796,7 @@ const myWorkScript = (LZString, bootstrap) => {
   };
 
   Order.historyRetrieve();
+  applyCardCellScale();
   applyWorkSummaryVisibility();
   console.log(Order.orders);
   // new Order();
@@ -1166,6 +1191,7 @@ const myWorkScript = (LZString, bootstrap) => {
 
   function loadOrderPage() {
     closeAllPopovers();
+    resetPopoverObservers();
     let orderScreen = document.querySelector(".presentation-Area");
     // 清空避免二度呼叫內部已經有東西又追加!
     orderScreen.innerHTML = "";
@@ -1239,13 +1265,17 @@ const myWorkScript = (LZString, bootstrap) => {
     })();
     (function create_pendingOrdersSummary() {
       let products = ``;
+      let totalPendingQty = 0;
       Product.products.forEach((product) => {
         const pendingQty = Number(pendingLog[normalizeProductName(product.name)]) || 0;
         if (pendingQty <= 0) return;
+        totalPendingQty += pendingQty;
         products =
           products +
           ` <div class="order-detail">
-        <div class="order-p-name"><p>${product.name}</p></div>
+        <div class="order-p-name"><p style="color:${normalizeTextColor(
+          product.textColor
+        )}">${product.name}</p></div>
                 <div class="order-p-number"><p>${pendingQty}</p></div> </div> `;
       });
       Object.keys(pendingLog).forEach((name) => {
@@ -1256,6 +1286,7 @@ const myWorkScript = (LZString, bootstrap) => {
         if (exists) return;
         const pendingQty = Number(pendingLog[normalizedName]) || 0;
         if (pendingQty <= 0) return;
+        totalPendingQty += pendingQty;
         products += ` <div class="order-detail"><div class="order-p-name"><p>${normalizedName}</p></div><div class="order-p-number"><p>${pendingQty}</p></div></div> `;
       });
       if (!products) {
@@ -1269,7 +1300,7 @@ const myWorkScript = (LZString, bootstrap) => {
    
           <div class="yoichi-card">
             <div class="yoichi-card-time-number">
-              <div class="order-time"><p>商品</p></div>
+              <div class="order-time"><p>待製作</p></div>
               <div class="order-number"><p>數量</p></div>
             </div>
             <div class="yoichi-card-order-detail">
@@ -1279,7 +1310,7 @@ const myWorkScript = (LZString, bootstrap) => {
             </div>
             <div class="yoichi-card-bottom yoichi-summary-card-bottom">
               <div class="order-total-price">
-                <p>未完成統計</p>
+                <p>統計數量 ${totalPendingQty}</p>
               </div>
               
             </div>
@@ -1319,26 +1350,29 @@ const myWorkScript = (LZString, bootstrap) => {
             let popID = btn.getAttribute("aria-describedby");
             if (popID) {
               let pop = document.querySelector(`#${popID}`);
+              if (!pop) return;
 
-              pop.querySelector(".popover-body");
-              let header_num = pop.querySelector(".popover-header").innerText;
+              const headerElement = pop.querySelector(".popover-header");
+              if (!headerElement) return;
+              let header_num = headerElement.innerText;
+              const order = Order.orders[header_num];
+              if (!order) {
+                closeAllPopovers();
+                return;
+              }
               // console.log("數字" + header.innerText);
               // 接著依靠數字做出訂單狀態按鈕
               let body = pop.querySelector(".popover-body");
+              if (!body) return;
               body.innerHTML = `
                     <div class="fulfillOrder order-${header_num}"><button>完成</button></div>
                     <div class="reviseOrder order-${header_num}"><button>修改</button></div>
-                    <div class="paidOrder order-${header_num}"><button>${Order.orders[header_num].status == "paid" ? "取消付款" : "付款"}</button></div>
+                    <div class="paidOrder order-${header_num}"><button>${order.status == "paid" ? "取消付款" : "付款"}</button></div>
               `;
-              let paidBtn = document.querySelector(
-                `.paidOrder.order-${header_num} button`
-              );
-              let reviseBtn = document.querySelector(
-                `.reviseOrder.order-${header_num} button`
-              );
-              let fulfillBtn = document.querySelector(
-                `.fulfillOrder.order-${header_num} button`
-              );
+              let paidBtn = body.querySelector(`.paidOrder.order-${header_num} button`);
+              let reviseBtn = body.querySelector(`.reviseOrder.order-${header_num} button`);
+              let fulfillBtn = body.querySelector(`.fulfillOrder.order-${header_num} button`);
+              if (!paidBtn || !reviseBtn || !fulfillBtn) return;
               paidBtn.addEventListener("click", (e) => {
                 // console.log("paidBtn數字是" + header_num);
                 // 已付款可切回未付款，避免卡死無法追加
@@ -1406,6 +1440,7 @@ const myWorkScript = (LZString, bootstrap) => {
       });
 
       observer.observe(btn, { attributes: true });
+      popoverObservers.push(observer);
     });
   }
   loadOrderPage();

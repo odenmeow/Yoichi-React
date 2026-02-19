@@ -490,18 +490,18 @@ const myEditScript = (LZString, bootstrap) => {
     if (!summaryToggleBtn) return;
 
     const defaultOptions = [
-      { id: "normal", label: "普", color: "#111827" },
-      { id: "noSesame", label: "不芝麻", color: "#111827" },
-      { id: "noPepper", label: "不胡椒", color: "#111827" },
-      { id: "sesameMore", label: "芝麻多", color: "#111827" },
-      { id: "sesameLess", label: "芝麻少", color: "#111827" },
-      { id: "pepperMore", label: "胡椒多", color: "#111827" },
-      { id: "pepperLess", label: "胡椒少", color: "#111827" },
-      { id: "veryMild", label: "微微辣", color: "#111827", group: "spice" },
-      { id: "mild", label: "微辣", color: "#111827", group: "spice" },
-      { id: "small", label: "小辣", color: "#111827", group: "spice" },
-      { id: "medium", label: "中辣", color: "#111827", group: "spice" },
-      { id: "large", label: "大辣", color: "#111827", group: "spice" },
+      { id: "normal", label: "普", color: "#111827", group: "" },
+      { id: "noSesame", label: "不芝麻", color: "#78eaf2", group: "" },
+      { id: "noPepper", label: "不胡椒", color: "#80f5e7", group: "" },
+      { id: "sesameMore", label: "芝麻多", color: "#9ebeff", group: "sesame" },
+      { id: "sesameLess", label: "芝麻少", color: "#99b6ff", group: "sesame" },
+      { id: "pepperMore", label: "胡椒多", color: "#111827", group: "pepper" },
+      { id: "pepperLess", label: "胡椒少", color: "#111827", group: "pepper" },
+      { id: "veryMild", label: "微微辣", color: "#ffd270", group: "spice" },
+      { id: "mild", label: "微辣", color: "#ffa55c", group: "spice" },
+      { id: "small", label: "小辣", color: "#ffb1a3", group: "spice" },
+      { id: "medium", label: "中辣", color: "#ff6c52", group: "spice" },
+      { id: "large", label: "大辣", color: "#ff1100", group: "spice" },
     ];
 
     const normalizeOptions = (raw) => {
@@ -674,6 +674,86 @@ const myEditScript = (LZString, bootstrap) => {
       editingOptions = writeOptions(editingOptions);
       closeModal();
     });
+  })();
+
+  (function setupCardScaleManager() {
+    const key = "yoichi-card-cell-scale";
+    const scaleBtn = document.querySelector(".yoichi-card-scale-btn");
+    if (!scaleBtn) return;
+
+    const normalizeScale = (value) => {
+      const num = Number(value);
+      if (!Number.isFinite(num)) return 1.3;
+      return Math.min(2, Math.max(1, Number(num.toFixed(2))));
+    };
+
+    const applyScale = (value) => {
+      const scale = normalizeScale(value);
+      document.documentElement.style.setProperty("--yoichi-card-cell-scale", String(scale));
+      return scale;
+    };
+
+    const savedScale = normalizeScale(safeStorageGet(key));
+    applyScale(savedScale);
+
+    const modal = document.createElement("section");
+    modal.className = "yoichi-note-modal yoichi-note-modal--settings";
+    modal.style.cssText =
+      "position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:1rem;";
+    modal.innerHTML = `
+      <div class="yoichi-note-modal-panel" style="width:min(92vw,560px)">
+        <div class="yoichi-note-modal-header">
+          <h4 class="yoichi-note-modal-title">卡片格子調整</h4>
+          <button type="button" class="btn btn-outline-secondary yoichi-note-close">關閉</button>
+        </div>
+        <div class="yoichi-note-modal-body" style="display:grid;gap:.8rem;">
+          <label class="form-label" style="margin:0;">放大倍率（100% ~ 200%）</label>
+          <input type="range" class="form-range yoichi-card-scale-range" min="100" max="200" step="5" />
+          <input type="number" class="form-control yoichi-card-scale-number" min="100" max="200" step="5" />
+        </div>
+        <div class="yoichi-note-modal-footer">
+          <button type="button" class="btn btn-primary yoichi-card-scale-save">儲存設定</button>
+        </div>
+      </div>
+    `;
+    document.body.append(modal);
+    modal.style.display = "none";
+
+    const rangeInput = modal.querySelector(".yoichi-card-scale-range");
+    const numberInput = modal.querySelector(".yoichi-card-scale-number");
+    const closeBtn = modal.querySelector(".yoichi-note-close");
+    const saveBtn = modal.querySelector(".yoichi-card-scale-save");
+
+    const syncInputs = (percent) => {
+      const pct = Math.min(200, Math.max(100, Number(percent) || 130));
+      rangeInput.value = String(pct);
+      numberInput.value = String(pct);
+      applyScale(pct / 100);
+    };
+
+    const openModal = () => {
+      const scale = normalizeScale(safeStorageGet(key));
+      syncInputs(Math.round(scale * 100));
+      modal.style.display = "flex";
+    };
+
+    const closeModal = () => {
+      modal.style.display = "none";
+    };
+
+    rangeInput.addEventListener("input", () => syncInputs(rangeInput.value));
+    numberInput.addEventListener("input", () => syncInputs(numberInput.value));
+    saveBtn.addEventListener("click", () => {
+      const scale = normalizeScale((Number(numberInput.value) || 130) / 100);
+      safeStorageSet(key, String(scale));
+      applyScale(scale);
+      closeModal();
+    });
+    closeBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeModal();
+    });
+    scaleBtn.addEventListener("click", openModal);
   })();
 };
 export default myEditScript;

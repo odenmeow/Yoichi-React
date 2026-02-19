@@ -11,6 +11,10 @@
   box-sizing: border-box;
 }
 
+:root {
+  --yoichi-card-cell-scale: 1.3;
+}
+
 body main section.cal-Area {
   position: relative;
   border: 3px blue solid;
@@ -470,7 +474,7 @@ body
   div.yoichi-card
   .yoichi-card-order-detail
   .order-detail {
-  height: 10%;
+  min-height: calc(2.4rem * var(--yoichi-card-cell-scale));
   display: flex;
 }
 body
@@ -488,7 +492,8 @@ body
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: large;
+  font-size: calc(1.1rem * var(--yoichi-card-cell-scale));
+  padding: calc(0.12rem * var(--yoichi-card-cell-scale));
 }
 body
   main
@@ -516,6 +521,8 @@ body
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: calc(1.1rem * var(--yoichi-card-cell-scale));
+  padding: calc(0.12rem * var(--yoichi-card-cell-scale));
 }
 body
   main

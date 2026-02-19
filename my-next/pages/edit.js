@@ -242,6 +242,12 @@ export default function Edit() {
             >
               口味個人化設定
             </button>
+            <button
+              type="button"
+              className="btn btn-outline-info yoichi-card-scale-btn"
+            >
+              卡片格子調整
+            </button>
           </div>
           <div className="yoichi-p-shows">
             <div className="yoichi-p-show-name">商品資料（4列）</div>
