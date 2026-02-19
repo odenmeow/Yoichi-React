@@ -164,7 +164,12 @@ const myWorkScript = (LZString, bootstrap) => {
     const theadRow = modal.querySelector("thead tr");
     const title = modal.querySelector(".yoichi-note-modal-title");
 
-    const dragState = { active: false, targetValue: false, suppressClick: false };
+    const dragState = {
+      active: false,
+      targetValue: false,
+      pointerId: null,
+      suppressClickUntil: 0,
+    };
 
     const setCellValue = (cellBtn, value) => {
       if (!cellBtn) return;
@@ -209,38 +214,49 @@ const myWorkScript = (LZString, bootstrap) => {
       const btn = getCellFromEvent(event.target);
       if (!btn) return;
       event.preventDefault();
-      if (event.target.setPointerCapture) {
-        try { event.target.setPointerCapture(event.pointerId); } catch (error) {}
+      if (btn.setPointerCapture) {
+        try {
+          btn.setPointerCapture(event.pointerId);
+        } catch (error) {}
       }
-      dragState.active = btn.dataset.noteKey !== "normal";
+      dragState.active = true;
       dragState.targetValue = btn.dataset.selected !== "1";
-      dragState.suppressClick = true;
+      dragState.pointerId = event.pointerId;
+      dragState.suppressClickUntil = Date.now() + 300;
       applyCell(btn, dragState.targetValue);
     });
 
     tbody.addEventListener("pointermove", (event) => {
-      if (!dragState.active) return;
+      if (!dragState.active || event.pointerId !== dragState.pointerId) return;
       const elem = document.elementFromPoint(event.clientX, event.clientY);
       const btn = getCellFromEvent(elem || event.target);
-      if (!btn || btn.dataset.noteKey === "normal") return;
+      if (!btn) return;
       applyCell(btn, dragState.targetValue);
     });
 
     tbody.addEventListener("click", (event) => {
       const btn = getCellFromEvent(event.target);
       if (!btn) return;
-      if (dragState.suppressClick) {
-        dragState.suppressClick = false;
+      if (Date.now() < dragState.suppressClickUntil) {
         return;
       }
       applyCell(btn, btn.dataset.selected !== "1");
     });
 
-    document.addEventListener("pointerup", () => {
+    document.addEventListener("pointerup", (event) => {
+      if (dragState.pointerId !== null && event.pointerId !== dragState.pointerId) {
+        return;
+      }
+      dragState.pointerId = null;
       dragState.active = false;
-      setTimeout(() => {
-        dragState.suppressClick = false;
-      }, 0);
+    });
+
+    document.addEventListener("pointercancel", (event) => {
+      if (dragState.pointerId !== null && event.pointerId !== dragState.pointerId) {
+        return;
+      }
+      dragState.pointerId = null;
+      dragState.active = false;
     });
 
     const closeModal = () => {
