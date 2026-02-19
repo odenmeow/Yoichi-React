@@ -361,6 +361,13 @@ body main section.presentation-Area .yoichi-order-shown {
   flex-basis: 25%;
   flex-shrink: 0;
 }
+
+body main section.presentation-Area .yoichi-order-shown.yoichi-order-summary-sticky {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: #f8fafc;
+}
 body main section.presentation-Area .yoichi-order-shown div.yoichi-card {
   border: 2px green solid;
   width: 100%;
@@ -568,6 +575,17 @@ body
   div.order-total-price
   p::after {
   content: "元";
+}
+
+body
+  main
+  section.presentation-Area
+  .yoichi-order-shown.yoichi-order-summary-sticky
+  div.yoichi-card
+  div.yoichi-card-bottom
+  div.order-total-price
+  p::after {
+  content: "";
 }
 body
   main

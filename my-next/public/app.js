@@ -1169,8 +1169,7 @@ const myWorkScript = (LZString, bootstrap) => {
     let orderScreen = document.querySelector(".presentation-Area");
     // 清空避免二度呼叫內部已經有東西又追加!
     orderScreen.innerHTML = "";
-    let sellLog = {};
-    let fulfilledOrdersTotalAmount = 0;
+    let pendingLog = {};
     const { productIndexMap, productColorMap } = getProductOrderMeta();
     (function create_NotFulfilled_Orders() {
       Order.orders.forEach((order, index) => {
@@ -1188,23 +1187,18 @@ const myWorkScript = (LZString, bootstrap) => {
           btnMsg = "已付";
           btnColor = "success";
         }
-        if (order.status == "fulfilled") {
-          // console.log("訂單", index);
-          sortedDetails.forEach((p) => {
-            const pickedName = normalizeProductName(p.pickedName);
-            if (sellLog[pickedName] == undefined) {
-              sellLog[pickedName] = Number(p.pickedNumber);
-            } else {
-              sellLog[pickedName] += Number(p.pickedNumber);
-              // console.log("選取數量", sellLog[p.pickedName]);
-            }
-          });
-          fulfilledOrdersTotalAmount += order.totalPrice;
-          return; //直接跳過，不創建該訂單了
-        }
-        if (order.status == "deprecated") {
+        if (order.status == "fulfilled" || order.status == "deprecated") {
           return;
         }
+        sortedDetails.forEach((p) => {
+          const pickedName = normalizeProductName(p.pickedName);
+          if (!pickedName) return;
+          if (pendingLog[pickedName] == undefined) {
+            pendingLog[pickedName] = Number(p.pickedNumber) || 0;
+          } else {
+            pendingLog[pickedName] += Number(p.pickedNumber) || 0;
+          }
+        });
         yoichi_order_shown.innerHTML = `
    
           <div class="yoichi-card">
@@ -1243,32 +1237,40 @@ const myWorkScript = (LZString, bootstrap) => {
         );
       });
     })();
-    (function create_fulfilledOrdersSummary() {
-      if (isWorkSummaryDisabled) {
-        return;
-      }
+    (function create_pendingOrdersSummary() {
       let products = ``;
       Product.products.forEach((product) => {
-        const soldQty = Number(sellLog[normalizeProductName(product.name)]) || 0;
-        if (soldQty <= 0) return;
+        const pendingQty = Number(pendingLog[normalizeProductName(product.name)]) || 0;
+        if (pendingQty <= 0) return;
         products =
           products +
           ` <div class="order-detail">
-        <div class="order-p-name"><p style="color:${normalizeTextColor(
-          product.textColor
-        )}">${product.name}</p></div>
-                <div class="order-p-number"><p>${soldQty}</p></div> </div> `;
+        <div class="order-p-name"><p>${product.name}</p></div>
+                <div class="order-p-number"><p>${pendingQty}</p></div> </div> `;
       });
-      // console.log(fulfilledOrdersTotalAmount); // 345元
+      Object.keys(pendingLog).forEach((name) => {
+        const normalizedName = normalizeProductName(name);
+        const exists = Product.products.some(
+          (p) => normalizeProductName(p.name) === normalizedName
+        );
+        if (exists) return;
+        const pendingQty = Number(pendingLog[normalizedName]) || 0;
+        if (pendingQty <= 0) return;
+        products += ` <div class="order-detail"><div class="order-p-name"><p>${normalizedName}</p></div><div class="order-p-number"><p>${pendingQty}</p></div></div> `;
+      });
+      if (!products) {
+        products = ` <div class="order-detail"><div class="order-p-name"><p>目前無未完成品項</p></div><div class="order-p-number"><p>0</p></div></div> `;
+      }
       let yoichi_order_shown = document.createElement("section");
-      yoichi_order_shown.classList = "yoichi-order-shown";
+      yoichi_order_shown.classList =
+        "yoichi-order-shown yoichi-order-summary-sticky";
 
       yoichi_order_shown.innerHTML = `
    
           <div class="yoichi-card">
             <div class="yoichi-card-time-number">
               <div class="order-time"><p>商品</p></div>
-              <div class="order-number"><p>總售出</p></div>
+              <div class="order-number"><p>數量</p></div>
             </div>
             <div class="yoichi-card-order-detail">
               
@@ -1277,7 +1279,7 @@ const myWorkScript = (LZString, bootstrap) => {
             </div>
             <div class="yoichi-card-bottom yoichi-summary-card-bottom">
               <div class="order-total-price">
-                <p>${fulfilledOrdersTotalAmount}</p>
+                <p>未完成統計</p>
               </div>
               
             </div>
