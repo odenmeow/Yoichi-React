@@ -744,7 +744,8 @@ main section.show-products .yoichi-p-controls {
   gap: 0.5rem;
 }
 
-main section.show-products .yoichi-p-shows > div {
+main section.show-products .yoichi-p-shows > .yoichi-p-show-meta,
+main section.show-products .yoichi-p-shows > .yoichi-p-show-edit-title {
   display: flex;
 }
 
@@ -903,3 +904,95 @@ aside.floating-element button {
     transform: scale(0);
   }
 } /*# sourceMappingURL=styleEdit.css.map */
+
+.yoichi-order-note-trigger {
+  cursor: pointer;
+  user-select: none;
+}
+
+.yoichi-order-note-trigger p {
+  pointer-events: none;
+}
+
+.order-p-name.yoichi-has-note {
+  background: #fef3c7;
+}
+
+.yoichi-note-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  pointer-events: auto;
+}
+
+.yoichi-note-modal-panel {
+  width: min(96vw, 1200px);
+  max-height: 90vh;
+  background: #fff;
+  border-radius: 12px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+}
+
+.yoichi-note-modal-header,
+.yoichi-note-modal-footer {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.yoichi-note-modal-footer {
+  border-bottom: 0;
+  border-top: 1px solid #e5e7eb;
+  justify-content: flex-end;
+}
+
+.yoichi-note-modal-title {
+  margin: 0;
+}
+
+.yoichi-note-modal-body {
+  overflow: auto;
+  padding: 0.5rem;
+}
+
+.yoichi-note-grid-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.yoichi-note-grid-table th,
+.yoichi-note-grid-table td {
+  border: 1px solid #cbd5e1;
+  text-align: center;
+  padding: 0.35rem;
+  min-width: 72px;
+}
+
+.yoichi-note-grid-table th:first-child,
+.yoichi-note-grid-table td:first-child {
+  min-width: 130px;
+  position: sticky;
+  left: 0;
+  background: #fff;
+  z-index: 1;
+}
+
+.yoichi-note-cell-btn {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #374151;
+  background: #fff;
+}
+
+.yoichi-note-cell-btn.is-selected {
+  background: #111827;
+}
