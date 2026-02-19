@@ -29,6 +29,9 @@ export default function Home() {
     return () => {
       // Cleanup if necessary
       clearTimeout(fallbackTimer);
+      if (typeof window.__yoichiWorkCleanup === "function") {
+        window.__yoichiWorkCleanup();
+      }
       window.__yoichiWorkScriptInitialized = false;
       document.body.removeChild(script);
     };

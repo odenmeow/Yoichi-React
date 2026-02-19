@@ -229,9 +229,6 @@ export default function Edit() {
             <button type="button" className="btn btn-outline-primary yoichi-theme-btn" data-theme="classic">
               經典
             </button>
-            <button type="button" className="btn btn-outline-secondary yoichi-theme-btn" data-theme="soft">
-              柔和
-            </button>
             <button type="button" className="btn btn-outline-dark yoichi-theme-btn" data-theme="contrast">
               高對比
             </button>
@@ -241,6 +238,12 @@ export default function Edit() {
               data-feature="work-summary"
             >
               風味調整
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline-success yoichi-product-default-btn"
+            >
+              商品預設
             </button>
             <button
               type="button"

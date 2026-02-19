@@ -41,6 +41,18 @@ const myEditScript = (LZString, bootstrap) => {
     return /^#[0-9a-fA-F]{6}$/.test(normalized) ? normalized : "#ff0000";
   };
 
+  const PRODUCT_DEFAULTS = [
+    { name: "香腸", price: 45, discountQty: 0, discountAmount: 0, textColor: "#ff0000" },
+    { name: "蔥肉串", price: 45, discountQty: 0, discountAmount: 0, textColor: "#00a803" },
+    { name: "豬肉串", price: 45, discountQty: 0, discountAmount: 0, textColor: "#fd3030" },
+    { name: "一串心", price: 20, discountQty: 0, discountAmount: 0, textColor: "#ff0000" },
+    { name: "雞腿串", price: 65, discountQty: 0, discountAmount: 0, textColor: "#2e58ff" },
+    { name: "七里香", price: 50, discountQty: 0, discountAmount: 0, textColor: "#3859ff" },
+    { name: "雞心", price: 50, discountQty: 0, discountAmount: 0, textColor: "#4542ff" },
+    { name: "雞骨輪", price: 60, discountQty: 2, discountAmount: 20, textColor: "#325afb" },
+    { name: "米腸", price: 40, discountQty: 0, discountAmount: 0, textColor: "#ff9061" },
+  ];
+
   class Product {
     static products = [];
     constructor(
@@ -99,15 +111,15 @@ const myEditScript = (LZString, bootstrap) => {
     }
     static generateDefault() {
       Product.products = [];
-      new Product("香腸", 45, 0, 0, "#ff0000");
-      new Product("蔥肉串", 45, 0, 0, "#00a803");
-      new Product("豬肉串", 45, 0, 0, "#fd3030");
-      new Product("一串心", 20, 0, 0, "#ff0000");
-      new Product("雞腿串", 65, 0, 0, "#2e58ff");
-      new Product("七里香", 50, 0, 0, "#3859ff");
-      new Product("雞心", 50, 0, 0, "#4542ff");
-      new Product("雞骨輪", 60, 2, 20, "#325afb");
-      new Product("米腸", 40, 0, 0, "#ff9061");
+      safeForEach(PRODUCT_DEFAULTS, (item) => {
+        new Product(
+          item.name,
+          Number(item.price),
+          Number(item.discountQty) || 0,
+          Number(item.discountAmount) || 0,
+          normalizeTextColor(item.textColor)
+        );
+      });
       Product.historyUpdate();
     }
   }
@@ -465,7 +477,7 @@ const myEditScript = (LZString, bootstrap) => {
     const container = document.querySelector("section.show-products");
     if (!container) return;
     const themeKey = "yoichi-edit-theme";
-    const themes = ["classic", "soft", "contrast"];
+    const themes = ["classic", "contrast"];
     const applyTheme = (theme) => {
       safeForEach(themes, (t) => container.classList.remove(`theme-${t}`));
       container.classList.add(`theme-${theme}`);
@@ -481,6 +493,18 @@ const myEditScript = (LZString, bootstrap) => {
         safeStorageSet(themeKey, theme);
         applyTheme(theme);
       });
+    });
+  })();
+
+  (function setupProductDefaultButton() {
+    const defaultBtn = document.querySelector(".yoichi-product-default-btn");
+    if (!defaultBtn) return;
+    defaultBtn.addEventListener("click", () => {
+      const confirmed = window.confirm("套用商品預設會覆蓋目前商品設定，是否繼續？");
+      if (!confirmed) return;
+      Product.generateDefault();
+      Product.historyRetrieve();
+      displayHistoryItems();
     });
   })();
 
@@ -681,6 +705,15 @@ const myEditScript = (LZString, bootstrap) => {
     const actionBtn = document.querySelector(".yoichi-action-ui-btn");
     if (!actionBtn) return;
 
+    const defaultConfig = {
+      popupScale: 100,
+      popupHeightScale: 100,
+      headerWeight: 100,
+      firstButton: 100,
+      secondButton: 100,
+      thirdButton: 100,
+    };
+
     const normalizeConfig = (raw) => {
       const data = raw && typeof raw === "object" ? raw : {};
       return {
@@ -698,26 +731,33 @@ const myEditScript = (LZString, bootstrap) => {
     modal.style.cssText =
       "position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:1rem;";
     modal.innerHTML = `
-      <div class="yoichi-note-modal-panel" style="width:min(92vw,620px)">
+      <div class="yoichi-note-modal-panel" style="width:min(94vw,700px)">
         <div class="yoichi-note-modal-header">
           <h4 class="yoichi-note-modal-title">按我UI 調整</h4>
           <button type="button" class="btn btn-outline-secondary yoichi-note-close">關閉</button>
         </div>
-        <div class="yoichi-note-modal-body" style="display:grid;gap:.85rem;">
-          <label class="form-label mb-0">彈出窗寬度（50% ~ 300%）</label>
-          <input type="range" class="form-range yoichi-action-popup-scale" min="50" max="300" step="1" />
-          <label class="form-label mb-0">彈出窗高度（50% ~ 300%）</label>
-          <input type="range" class="form-range yoichi-action-popup-height-scale" min="50" max="300" step="1" />
-          <label class="form-label mb-0">上方數字區權重（50% ~ 300%）</label>
-          <input type="range" class="form-range yoichi-action-header-height" min="50" max="300" step="1" />
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;">
-            <div><label class="form-label mb-0">完成按鈕權重（50% ~ 300%）</label><input type="range" class="form-range yoichi-action-btn1" min="50" max="300" step="1" /></div>
-            <div><label class="form-label mb-0">修改按鈕權重（50% ~ 300%）</label><input type="range" class="form-range yoichi-action-btn2" min="50" max="300" step="1" /></div>
-            <div><label class="form-label mb-0">付款按鈕權重（50% ~ 300%）</label><input type="range" class="form-range yoichi-action-btn3" min="50" max="300" step="1" /></div>
+        <div class="yoichi-note-modal-body" style="display:grid;gap:1rem;">
+          <div style="padding:.75rem;border:1px solid #e5e7eb;border-radius:12px;display:grid;gap:.4rem;">
+            <label class="form-label mb-0 yoichi-action-label-popup-scale">彈出窗寬度：100%</label>
+            <input type="range" class="form-range yoichi-action-popup-scale" min="50" max="300" step="1" />
           </div>
-          <small class="text-muted">全部改成 bar，預設 100%，三顆按鈕會依權重自動換算占比。</small>
+          <div style="padding:.75rem;border:1px solid #e5e7eb;border-radius:12px;display:grid;gap:.4rem;">
+            <label class="form-label mb-0 yoichi-action-label-popup-height">彈出窗高度：100%</label>
+            <input type="range" class="form-range yoichi-action-popup-height-scale" min="50" max="300" step="1" />
+          </div>
+          <div style="padding:.75rem;border:1px solid #e5e7eb;border-radius:12px;display:grid;gap:.4rem;">
+            <label class="form-label mb-0 yoichi-action-label-header">上方數字區權重：100%</label>
+            <input type="range" class="form-range yoichi-action-header-height" min="50" max="300" step="1" />
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.6rem;">
+            <div style="padding:.7rem;border:1px solid #e5e7eb;border-radius:12px;"><label class="form-label mb-0 yoichi-action-label-btn1">完成按鈕權重：100%</label><input type="range" class="form-range yoichi-action-btn1" min="50" max="300" step="1" /></div>
+            <div style="padding:.7rem;border:1px solid #e5e7eb;border-radius:12px;"><label class="form-label mb-0 yoichi-action-label-btn2">修改按鈕權重：100%</label><input type="range" class="form-range yoichi-action-btn2" min="50" max="300" step="1" /></div>
+            <div style="padding:.7rem;border:1px solid #e5e7eb;border-radius:12px;"><label class="form-label mb-0 yoichi-action-label-btn3">付款按鈕權重：100%</label><input type="range" class="form-range yoichi-action-btn3" min="50" max="300" step="1" /></div>
+          </div>
+          <small class="text-muted">拖拉 bar 會即時顯示比例，按鈕區塊會依權重換算占比。</small>
         </div>
-        <div class="yoichi-note-modal-footer">
+        <div class="yoichi-note-modal-footer" style="gap:.5rem;">
+          <button type="button" class="btn btn-outline-secondary yoichi-action-ui-reset">預設還原</button>
           <button type="button" class="btn btn-primary yoichi-action-ui-save">儲存設定</button>
         </div>
       </div>
@@ -727,6 +767,7 @@ const myEditScript = (LZString, bootstrap) => {
 
     const closeBtn = modal.querySelector(".yoichi-note-close");
     const saveBtn = modal.querySelector(".yoichi-action-ui-save");
+    const resetBtn = modal.querySelector(".yoichi-action-ui-reset");
     const popupScaleInput = modal.querySelector(".yoichi-action-popup-scale");
     const popupHeightScaleInput = modal.querySelector(".yoichi-action-popup-height-scale");
     const headerHeightInput = modal.querySelector(".yoichi-action-header-height");
@@ -734,20 +775,52 @@ const myEditScript = (LZString, bootstrap) => {
     const btn2Input = modal.querySelector(".yoichi-action-btn2");
     const btn3Input = modal.querySelector(".yoichi-action-btn3");
 
-    const openModal = () => {
-      const config = normalizeConfig(safeParseJSON(safeStorageGet(key)));
+    const labels = {
+      popup: modal.querySelector(".yoichi-action-label-popup-scale"),
+      popupHeight: modal.querySelector(".yoichi-action-label-popup-height"),
+      header: modal.querySelector(".yoichi-action-label-header"),
+      btn1: modal.querySelector(".yoichi-action-label-btn1"),
+      btn2: modal.querySelector(".yoichi-action-label-btn2"),
+      btn3: modal.querySelector(".yoichi-action-label-btn3"),
+    };
+
+    const updateLabels = () => {
+      labels.popup.innerText = `彈出窗寬度：${popupScaleInput.value}%`;
+      labels.popupHeight.innerText = `彈出窗高度：${popupHeightScaleInput.value}%`;
+      labels.header.innerText = `上方數字區權重：${headerHeightInput.value}%`;
+      labels.btn1.innerText = `完成按鈕權重：${btn1Input.value}%`;
+      labels.btn2.innerText = `修改按鈕權重：${btn2Input.value}%`;
+      labels.btn3.innerText = `付款按鈕權重：${btn3Input.value}%`;
+    };
+
+    const fillConfigToInputs = (config) => {
       popupScaleInput.value = String(config.popupScale);
       popupHeightScaleInput.value = String(config.popupHeightScale);
       headerHeightInput.value = String(config.headerWeight);
       btn1Input.value = String(config.firstButton);
       btn2Input.value = String(config.secondButton);
       btn3Input.value = String(config.thirdButton);
+      updateLabels();
+    };
+
+    const openModal = () => {
+      const config = normalizeConfig(safeParseJSON(safeStorageGet(key)));
+      fillConfigToInputs(config);
       modal.style.display = "flex";
     };
 
     const closeModal = () => {
       modal.style.display = "none";
     };
+
+    [popupScaleInput, popupHeightScaleInput, headerHeightInput, btn1Input, btn2Input, btn3Input].forEach((input) => {
+      input.addEventListener("input", updateLabels);
+    });
+
+    resetBtn.addEventListener("click", () => {
+      safeStorageSet(key, JSON.stringify(defaultConfig));
+      fillConfigToInputs(defaultConfig);
+    });
 
     saveBtn.addEventListener("click", () => {
       const config = normalizeConfig({
@@ -774,6 +847,7 @@ const myEditScript = (LZString, bootstrap) => {
     const noteBtn = document.querySelector(".yoichi-note-ui-btn");
     if (!noteBtn) return;
 
+    const defaultConfig = { width: 100, height: 100, align: "right" };
     const normalizeConfig = (raw) => {
       const data = raw && typeof raw === "object" ? raw : {};
       const align = ["left", "center", "right", "stretch"].includes(data.align)
@@ -796,20 +870,27 @@ const myEditScript = (LZString, bootstrap) => {
           <h4 class="yoichi-note-modal-title">客製化UI（備註儲存鍵）</h4>
           <button type="button" class="btn btn-outline-secondary yoichi-note-close">關閉</button>
         </div>
-        <div class="yoichi-note-modal-body" style="display:grid;gap:.85rem;">
-          <label class="form-label mb-0">儲存按鈕寬度（50% ~ 300%）</label>
-          <input type="range" class="form-range yoichi-note-save-width" min="50" max="300" step="1" />
-          <label class="form-label mb-0">儲存按鈕高度（50% ~ 300%）</label>
-          <input type="range" class="form-range yoichi-note-save-height" min="50" max="300" step="1" />
-          <label class="form-label mb-0">按鈕位置</label>
-          <select class="form-select yoichi-note-save-align">
-            <option value="left">靠左</option>
-            <option value="center">置中</option>
-            <option value="right">靠右</option>
-            <option value="stretch">滿版長條</option>
-          </select>
+        <div class="yoichi-note-modal-body" style="display:grid;gap:1rem;">
+          <div style="padding:.75rem;border:1px solid #e5e7eb;border-radius:12px;display:grid;gap:.4rem;">
+            <label class="form-label mb-0 yoichi-note-label-width">儲存按鈕寬度：100%</label>
+            <input type="range" class="form-range yoichi-note-save-width" min="50" max="300" step="1" />
+          </div>
+          <div style="padding:.75rem;border:1px solid #e5e7eb;border-radius:12px;display:grid;gap:.4rem;">
+            <label class="form-label mb-0 yoichi-note-label-height">儲存按鈕高度：100%</label>
+            <input type="range" class="form-range yoichi-note-save-height" min="50" max="300" step="1" />
+          </div>
+          <div style="padding:.75rem;border:1px solid #e5e7eb;border-radius:12px;display:grid;gap:.4rem;">
+            <label class="form-label mb-0">按鈕位置</label>
+            <select class="form-select yoichi-note-save-align">
+              <option value="left">靠左</option>
+              <option value="center">置中</option>
+              <option value="right">靠右</option>
+              <option value="stretch">滿版長條</option>
+            </select>
+          </div>
         </div>
-        <div class="yoichi-note-modal-footer">
+        <div class="yoichi-note-modal-footer" style="gap:.5rem;">
+          <button type="button" class="btn btn-outline-secondary yoichi-note-ui-reset">預設還原</button>
           <button type="button" class="btn btn-primary yoichi-note-ui-save">儲存設定</button>
         </div>
       </div>
@@ -819,21 +900,42 @@ const myEditScript = (LZString, bootstrap) => {
 
     const closeBtn = modal.querySelector(".yoichi-note-close");
     const saveBtn = modal.querySelector(".yoichi-note-ui-save");
+    const resetBtn = modal.querySelector(".yoichi-note-ui-reset");
     const widthInput = modal.querySelector(".yoichi-note-save-width");
     const heightInput = modal.querySelector(".yoichi-note-save-height");
     const alignInput = modal.querySelector(".yoichi-note-save-align");
+    const widthLabel = modal.querySelector(".yoichi-note-label-width");
+    const heightLabel = modal.querySelector(".yoichi-note-label-height");
 
-    const openModal = () => {
-      const config = normalizeConfig(safeParseJSON(safeStorageGet(key)));
+    const updateLabels = () => {
+      widthLabel.innerText = `儲存按鈕寬度：${widthInput.value}%`;
+      heightLabel.innerText = `儲存按鈕高度：${heightInput.value}%`;
+    };
+
+    const fillConfigToInputs = (config) => {
       widthInput.value = String(config.width);
       heightInput.value = String(config.height);
       alignInput.value = config.align;
+      updateLabels();
+    };
+
+    const openModal = () => {
+      const config = normalizeConfig(safeParseJSON(safeStorageGet(key)));
+      fillConfigToInputs(config);
       modal.style.display = "flex";
     };
 
     const closeModal = () => {
       modal.style.display = "none";
     };
+
+    widthInput.addEventListener("input", updateLabels);
+    heightInput.addEventListener("input", updateLabels);
+
+    resetBtn.addEventListener("click", () => {
+      safeStorageSet(key, JSON.stringify(defaultConfig));
+      fillConfigToInputs(defaultConfig);
+    });
 
     saveBtn.addEventListener("click", () => {
       const config = normalizeConfig({

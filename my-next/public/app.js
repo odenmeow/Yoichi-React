@@ -42,6 +42,19 @@ const myWorkScript = (LZString, bootstrap) => {
 
   const normalizeProductName = (value) => String(value || "").trim();
 
+
+  const PRODUCT_DEFAULTS = [
+    { name: "香腸", price: 45, discountQty: 0, discountAmount: 0, textColor: "#ff0000" },
+    { name: "蔥肉串", price: 45, discountQty: 0, discountAmount: 0, textColor: "#00a803" },
+    { name: "豬肉串", price: 45, discountQty: 0, discountAmount: 0, textColor: "#fd3030" },
+    { name: "一串心", price: 20, discountQty: 0, discountAmount: 0, textColor: "#ff0000" },
+    { name: "雞腿串", price: 65, discountQty: 0, discountAmount: 0, textColor: "#2e58ff" },
+    { name: "七里香", price: 50, discountQty: 0, discountAmount: 0, textColor: "#3859ff" },
+    { name: "雞心", price: 50, discountQty: 0, discountAmount: 0, textColor: "#4542ff" },
+    { name: "雞骨輪", price: 60, discountQty: 2, discountAmount: 20, textColor: "#325afb" },
+    { name: "米腸", price: 40, discountQty: 0, discountAmount: 0, textColor: "#ff9061" },
+  ];
+
   const NOTE_OPTIONS_DEFAULT = [
     { id: "normal", label: "普", color: "#111827", group: "" },
     { id: "noSesame", label: "不芝麻", color: "#78eaf2", group: "" },
@@ -178,6 +191,7 @@ const myWorkScript = (LZString, bootstrap) => {
 
   let noteModalState = null;
   let popoverObservers = [];
+  let orderActionHandler = null;
 
   const getAlphabetLabel = (index) => {
     let n = Number(index) || 0;
@@ -533,6 +547,83 @@ const myWorkScript = (LZString, bootstrap) => {
     presentationArea.classList.toggle("yoichi-hide-card-summary", !showSummary);
   };
 
+  const bindOrderActionMenus = () => {
+    if (orderActionHandler) return;
+    orderActionHandler = (event) => {
+      const trigger = event.target.closest(".yoichi-triplebtn");
+      const actionBtn = event.target.closest(".yoichi-order-action-menu button");
+      if (!trigger && !actionBtn) {
+        closeAllPopovers();
+        return;
+      }
+
+      if (trigger) {
+        const orderIndex = Number(trigger.dataset.orderIndex);
+        if (!Number.isFinite(orderIndex) || !Order.orders[orderIndex]) return;
+        const menu = trigger.parentElement.querySelector(".yoichi-order-action-menu");
+        if (!menu) return;
+        const isHidden = menu.classList.contains("d-none");
+        closeAllPopovers();
+        if (isHidden) {
+          menu.classList.remove("d-none");
+        }
+        return;
+      }
+
+      if (!actionBtn) return;
+      const menu = actionBtn.closest(".yoichi-order-action-menu");
+      const orderIndex = Number(menu?.dataset.orderIndex);
+      if (!Number.isFinite(orderIndex) || !Order.orders[orderIndex]) {
+        closeAllPopovers();
+        return;
+      }
+
+      if (actionBtn.classList.contains("yoichi-menu-paid")) {
+        Order.orders[orderIndex].status =
+          Order.orders[orderIndex].status == "paid" ? "pending" : "paid";
+        closeAllPopovers();
+        Order.historyUpdate();
+        displayProducts("new");
+        loadOrderPage();
+        return;
+      }
+
+      if (actionBtn.classList.contains("yoichi-menu-revise")) {
+        displayProducts("revise", orderIndex);
+        let header = document.querySelector("header");
+        header.scrollIntoView({ behavior: "instant", block: "start" });
+        closeAllPopovers();
+        return;
+      }
+
+      if (actionBtn.classList.contains("yoichi-menu-fulfill")) {
+        if (Order.orders[orderIndex].status == "paid") {
+          Order.orders[orderIndex].status = "fulfilled";
+          closeAllPopovers();
+          Order.historyUpdate();
+          displayProducts("new");
+          loadOrderPage();
+        } else {
+          (function showWarn() {
+            let body = document.querySelector("body");
+            let warn = document.createElement("div");
+            warn.innerText = "請先付款";
+            warn.className = "noSend alert alert-warning";
+            warn.setAttribute("role", "alert");
+            body.append(warn);
+            warn.addEventListener("animationend", (e) => {
+              e.target.remove();
+            });
+            warn.style.animation = "opacityTransitions 2.1s ease forwards";
+          })();
+          closeAllPopovers();
+        }
+      }
+    };
+
+    document.addEventListener("click", orderActionHandler);
+  };
+
   class HTMLTime {
     static interval;
     static lock = false;
@@ -613,15 +704,15 @@ const myWorkScript = (LZString, bootstrap) => {
     }
     static generateDefault() {
       Product.products = [];
-      new Product("香腸", 45, 0, 0, "#ff0000");
-      new Product("蔥肉串", 45, 0, 0, "#00a803");
-      new Product("豬肉串", 45, 0, 0, "#fd3030");
-      new Product("一串心", 20, 0, 0, "#ff0000");
-      new Product("雞腿串", 65, 0, 0, "#2e58ff");
-      new Product("七里香", 50, 0, 0, "#3859ff");
-      new Product("雞心", 50, 0, 0, "#4542ff");
-      new Product("雞骨輪", 60, 2, 20, "#325afb");
-      new Product("米腸", 40, 0, 0, "#ff9061");
+      PRODUCT_DEFAULTS.forEach((item) => {
+        new Product(
+          item.name,
+          Number(item.price),
+          Number(item.discountQty) || 0,
+          Number(item.discountAmount) || 0,
+          normalizeTextColor(item.textColor)
+        );
+      });
       Product.historyUpdate();
     }
   }
@@ -1384,85 +1475,21 @@ const myWorkScript = (LZString, bootstrap) => {
       }
     });
 
-    const bindOrderActionMenus = () => {
-      document.addEventListener("click", (event) => {
-        const trigger = event.target.closest(".yoichi-triplebtn");
-        const actionBtn = event.target.closest(".yoichi-order-action-menu button");
-        if (!trigger && !actionBtn) {
-          closeAllPopovers();
-          return;
-        }
-
-        if (trigger) {
-          const orderIndex = Number(trigger.dataset.orderIndex);
-          if (!Number.isFinite(orderIndex) || !Order.orders[orderIndex]) return;
-          const menu = trigger.parentElement.querySelector(".yoichi-order-action-menu");
-          if (!menu) return;
-          const isHidden = menu.classList.contains("d-none");
-          closeAllPopovers();
-          if (isHidden) {
-            menu.classList.remove("d-none");
-          }
-          return;
-        }
-
-        if (!actionBtn) return;
-        const menu = actionBtn.closest(".yoichi-order-action-menu");
-        const orderIndex = Number(menu?.dataset.orderIndex);
-        if (!Number.isFinite(orderIndex) || !Order.orders[orderIndex]) {
-          closeAllPopovers();
-          return;
-        }
-
-        if (actionBtn.classList.contains("yoichi-menu-paid")) {
-          Order.orders[orderIndex].status =
-            Order.orders[orderIndex].status == "paid" ? "pending" : "paid";
-          closeAllPopovers();
-          Order.historyUpdate();
-          displayProducts("new");
-          loadOrderPage();
-          return;
-        }
-
-        if (actionBtn.classList.contains("yoichi-menu-revise")) {
-          displayProducts("revise", orderIndex);
-          let header = document.querySelector("header");
-          header.scrollIntoView({ behavior: "instant", block: "start" });
-          closeAllPopovers();
-          return;
-        }
-
-        if (actionBtn.classList.contains("yoichi-menu-fulfill")) {
-          if (Order.orders[orderIndex].status == "paid") {
-            Order.orders[orderIndex].status = "fulfilled";
-            closeAllPopovers();
-            Order.historyUpdate();
-            displayProducts("new");
-            loadOrderPage();
-          } else {
-            (function showWarn() {
-              let body = document.querySelector("body");
-              let warn = document.createElement("div");
-              warn.innerText = "請先付款";
-              warn.className = "noSend alert alert-warning";
-              warn.setAttribute("role", "alert");
-              body.append(warn);
-              warn.addEventListener("animationend", (e) => {
-                e.target.remove();
-              });
-              warn.style.animation = "opacityTransitions 2.1s ease forwards";
-            })();
-            closeAllPopovers();
-          }
-        }
-      });
-    };
-
-    if (!window.__yoichiOrderActionMenusBound) {
-      bindOrderActionMenus();
-      window.__yoichiOrderActionMenusBound = true;
-    }
+    bindOrderActionMenus();
   }
+  window.__yoichiWorkCleanup = () => {
+    HTMLTime.t_vanish();
+    closeAllPopovers();
+    resetPopoverObservers();
+    if (orderActionHandler) {
+      document.removeEventListener("click", orderActionHandler);
+      orderActionHandler = null;
+    }
+    if (noteModalState?.modal?.remove) {
+      noteModalState.modal.remove();
+      noteModalState = null;
+    }
+  };
   loadOrderPage();
 };
 export default myWorkScript;
