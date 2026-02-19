@@ -684,12 +684,12 @@ const myEditScript = (LZString, bootstrap) => {
     const normalizeConfig = (raw) => {
       const data = raw && typeof raw === "object" ? raw : {};
       return {
-        popupScale: Math.min(160, Math.max(70, Number(data.popupScale) || 100)),
-        popupHeightScale: Math.min(180, Math.max(70, Number(data.popupHeightScale) || 100)),
-        headerHeight: Math.min(80, Math.max(20, Number(data.headerHeight) || 45)),
-        firstButton: Math.min(70, Math.max(10, Number(data.firstButton) || 33)),
-        secondButton: Math.min(70, Math.max(10, Number(data.secondButton) || 34)),
-        thirdButton: Math.min(70, Math.max(10, Number(data.thirdButton) || 33)),
+        popupScale: Math.min(300, Math.max(50, Number(data.popupScale) || 100)),
+        popupHeightScale: Math.min(300, Math.max(50, Number(data.popupHeightScale) || 100)),
+        headerWeight: Math.min(300, Math.max(50, Number(data.headerWeight) || 100)),
+        firstButton: Math.min(300, Math.max(50, Number(data.firstButton) || 100)),
+        secondButton: Math.min(300, Math.max(50, Number(data.secondButton) || 100)),
+        thirdButton: Math.min(300, Math.max(50, Number(data.thirdButton) || 100)),
       };
     };
 
@@ -704,18 +704,18 @@ const myEditScript = (LZString, bootstrap) => {
           <button type="button" class="btn btn-outline-secondary yoichi-note-close">關閉</button>
         </div>
         <div class="yoichi-note-modal-body" style="display:grid;gap:.85rem;">
-          <label class="form-label mb-0">彈出窗寬度（%）</label>
-          <input type="number" class="form-control yoichi-action-popup-scale" min="70" max="160" step="1" />
-          <label class="form-label mb-0">彈出窗高度（%）</label>
-          <input type="number" class="form-control yoichi-action-popup-height-scale" min="70" max="180" step="1" />
-          <label class="form-label mb-0">上方數字區高度占比（%）</label>
-          <input type="number" class="form-control yoichi-action-header-height" min="20" max="80" step="1" />
+          <label class="form-label mb-0">彈出窗寬度（50% ~ 300%）</label>
+          <input type="range" class="form-range yoichi-action-popup-scale" min="50" max="300" step="1" />
+          <label class="form-label mb-0">彈出窗高度（50% ~ 300%）</label>
+          <input type="range" class="form-range yoichi-action-popup-height-scale" min="50" max="300" step="1" />
+          <label class="form-label mb-0">上方數字區權重（50% ~ 300%）</label>
+          <input type="range" class="form-range yoichi-action-header-height" min="50" max="300" step="1" />
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;">
-            <div><label class="form-label mb-0">完成按鈕占比（%）</label><input type="number" class="form-control yoichi-action-btn1" min="10" max="70" step="1" /></div>
-            <div><label class="form-label mb-0">修改按鈕占比（%）</label><input type="number" class="form-control yoichi-action-btn2" min="10" max="70" step="1" /></div>
-            <div><label class="form-label mb-0">付款按鈕占比（%）</label><input type="number" class="form-control yoichi-action-btn3" min="10" max="70" step="1" /></div>
+            <div><label class="form-label mb-0">完成按鈕權重（50% ~ 300%）</label><input type="range" class="form-range yoichi-action-btn1" min="50" max="300" step="1" /></div>
+            <div><label class="form-label mb-0">修改按鈕權重（50% ~ 300%）</label><input type="range" class="form-range yoichi-action-btn2" min="50" max="300" step="1" /></div>
+            <div><label class="form-label mb-0">付款按鈕權重（50% ~ 300%）</label><input type="range" class="form-range yoichi-action-btn3" min="50" max="300" step="1" /></div>
           </div>
-          <small class="text-muted">預設窗窗大小是 100%，三顆按鈕會依占比自動換算。</small>
+          <small class="text-muted">全部改成 bar，預設 100%，三顆按鈕會依權重自動換算占比。</small>
         </div>
         <div class="yoichi-note-modal-footer">
           <button type="button" class="btn btn-primary yoichi-action-ui-save">儲存設定</button>
@@ -738,7 +738,7 @@ const myEditScript = (LZString, bootstrap) => {
       const config = normalizeConfig(safeParseJSON(safeStorageGet(key)));
       popupScaleInput.value = String(config.popupScale);
       popupHeightScaleInput.value = String(config.popupHeightScale);
-      headerHeightInput.value = String(config.headerHeight);
+      headerHeightInput.value = String(config.headerWeight);
       btn1Input.value = String(config.firstButton);
       btn2Input.value = String(config.secondButton);
       btn3Input.value = String(config.thirdButton);
@@ -753,7 +753,7 @@ const myEditScript = (LZString, bootstrap) => {
       const config = normalizeConfig({
         popupScale: popupScaleInput.value,
         popupHeightScale: popupHeightScaleInput.value,
-        headerHeight: headerHeightInput.value,
+        headerWeight: headerHeightInput.value,
         firstButton: btn1Input.value,
         secondButton: btn2Input.value,
         thirdButton: btn3Input.value,
@@ -780,8 +780,8 @@ const myEditScript = (LZString, bootstrap) => {
         ? data.align
         : "right";
       return {
-        width: Math.min(100, Math.max(20, Number(data.width) || 100)),
-        height: Math.min(220, Math.max(70, Number(data.height) || 100)),
+        width: Math.min(300, Math.max(50, Number(data.width) || 100)),
+        height: Math.min(300, Math.max(50, Number(data.height) || 100)),
         align,
       };
     };
@@ -797,10 +797,10 @@ const myEditScript = (LZString, bootstrap) => {
           <button type="button" class="btn btn-outline-secondary yoichi-note-close">關閉</button>
         </div>
         <div class="yoichi-note-modal-body" style="display:grid;gap:.85rem;">
-          <label class="form-label mb-0">儲存按鈕寬度（%）</label>
-          <input type="number" class="form-control yoichi-note-save-width" min="20" max="100" step="1" />
-          <label class="form-label mb-0">儲存按鈕高度（%）</label>
-          <input type="number" class="form-control yoichi-note-save-height" min="70" max="220" step="1" />
+          <label class="form-label mb-0">儲存按鈕寬度（50% ~ 300%）</label>
+          <input type="range" class="form-range yoichi-note-save-width" min="50" max="300" step="1" />
+          <label class="form-label mb-0">儲存按鈕高度（50% ~ 300%）</label>
+          <input type="range" class="form-range yoichi-note-save-height" min="50" max="300" step="1" />
           <label class="form-label mb-0">按鈕位置</label>
           <select class="form-select yoichi-note-save-align">
             <option value="left">靠左</option>

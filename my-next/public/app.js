@@ -3,7 +3,7 @@ const myWorkScript = (LZString, bootstrap) => {
     return;
   }
   window.__yoichiWorkScriptInitialized = true;
-  const isWorkSummaryDisabled = true;
+  const isWorkSummaryDisabled = false;
 
   const safeStorageGet = (key) => {
     try {
@@ -71,12 +71,12 @@ const myWorkScript = (LZString, bootstrap) => {
 
   const applyActionUiConfig = () => {
     const saved = safeParseJSON(safeStorageGet("yoichi-action-ui-config")) || {};
-    const popupScale = Math.min(160, Math.max(70, Number(saved.popupScale) || 100));
-    const popupHeightScale = Math.min(180, Math.max(70, Number(saved.popupHeightScale) || 100));
-    const headerHeight = Math.min(80, Math.max(20, Number(saved.headerHeight) || 45));
-    const firstButton = Math.min(70, Math.max(10, Number(saved.firstButton) || 33));
-    const secondButton = Math.min(70, Math.max(10, Number(saved.secondButton) || 34));
-    const thirdButton = Math.min(70, Math.max(10, Number(saved.thirdButton) || 33));
+    const popupScale = Math.min(300, Math.max(50, Number(saved.popupScale) || 100));
+    const popupHeightScale = Math.min(300, Math.max(50, Number(saved.popupHeightScale) || 100));
+    const headerWeight = Math.min(300, Math.max(50, Number(saved.headerWeight) || 100));
+    const firstButton = Math.min(300, Math.max(50, Number(saved.firstButton) || 100));
+    const secondButton = Math.min(300, Math.max(50, Number(saved.secondButton) || 100));
+    const thirdButton = Math.min(300, Math.max(50, Number(saved.thirdButton) || 100));
     const totalButtons = firstButton + secondButton + thirdButton;
     const ratioA = ((firstButton / totalButtons) * 100).toFixed(2);
     const ratioB = ((secondButton / totalButtons) * 100).toFixed(2);
@@ -84,8 +84,9 @@ const myWorkScript = (LZString, bootstrap) => {
 
     document.documentElement.style.setProperty("--yoichi-action-menu-scale", String(popupScale / 100));
     document.documentElement.style.setProperty("--yoichi-action-menu-height-scale", String(popupHeightScale / 100));
-    document.documentElement.style.setProperty("--yoichi-action-header-ratio", `${headerHeight}%`);
-    document.documentElement.style.setProperty("--yoichi-action-row-ratio", `${100 - headerHeight}%`);
+    const headerRatio = ((headerWeight / (headerWeight + 100)) * 100).toFixed(2);
+    document.documentElement.style.setProperty("--yoichi-action-header-ratio", `${headerRatio}%`);
+    document.documentElement.style.setProperty("--yoichi-action-row-ratio", `${100 - Number(headerRatio)}%`);
     document.documentElement.style.setProperty("--yoichi-action-btn1-ratio", `${ratioA}%`);
     document.documentElement.style.setProperty("--yoichi-action-btn2-ratio", `${ratioB}%`);
     document.documentElement.style.setProperty("--yoichi-action-btn3-ratio", `${ratioC}%`);
@@ -93,8 +94,8 @@ const myWorkScript = (LZString, bootstrap) => {
 
   const applyNoteSaveUiConfig = () => {
     const saved = safeParseJSON(safeStorageGet("yoichi-note-save-ui-config")) || {};
-    const width = Math.min(100, Math.max(20, Number(saved.width) || 100));
-    const height = Math.min(220, Math.max(70, Number(saved.height) || 100));
+    const width = Math.min(300, Math.max(50, Number(saved.width) || 100));
+    const height = Math.min(300, Math.max(50, Number(saved.height) || 100));
     const align = ["left", "center", "right", "stretch"].includes(saved.align)
       ? saved.align
       : "right";
