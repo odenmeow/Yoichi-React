@@ -240,13 +240,19 @@ export default function Edit() {
               className="btn btn-outline-success yoichi-summary-toggle-btn"
               data-feature="work-summary"
             >
-              口味個人化設定
+              風味調整
             </button>
             <button
               type="button"
-              className="btn btn-outline-info yoichi-card-scale-btn"
+              className="btn btn-outline-info yoichi-action-ui-btn"
             >
-              卡片格子調整
+              按我UI
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline-dark yoichi-note-ui-btn"
+            >
+              客製化UI
             </button>
           </div>
           <div className="yoichi-p-shows">
