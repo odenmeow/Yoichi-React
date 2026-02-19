@@ -536,7 +536,7 @@ const myEditScript = (LZString, bootstrap) => {
     summaryToggleBtn.classList.add("btn-outline-primary");
 
     const modal = document.createElement("section");
-    modal.className = "yoichi-note-modal d-none";
+    modal.className = "yoichi-note-modal";
     modal.style.cssText =
       "position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:1rem;";
     modal.innerHTML = `
@@ -593,12 +593,10 @@ const myEditScript = (LZString, bootstrap) => {
     const openModal = () => {
       editingOptions = readOptions().map((item) => ({ ...item }));
       renderRows();
-      modal.classList.remove("d-none");
       modal.style.display = "flex";
     };
 
     const closeModal = () => {
-      modal.classList.add("d-none");
       modal.style.display = "none";
     };
 

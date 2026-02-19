@@ -117,7 +117,7 @@ const myWorkScript = (LZString, bootstrap) => {
   const getNoteModal = () => {
     if (noteModalState) return noteModalState;
     const modal = document.createElement("section");
-    modal.className = "yoichi-note-modal d-none";
+    modal.className = "yoichi-note-modal";
     modal.style.cssText =
       "position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:1rem;";
     modal.innerHTML = `
@@ -207,7 +207,6 @@ const myWorkScript = (LZString, bootstrap) => {
     });
 
     const closeModal = () => {
-      modal.classList.add("d-none");
       modal.style.display = "none";
     };
 
@@ -277,8 +276,6 @@ const myWorkScript = (LZString, bootstrap) => {
       })
       .join("");
     modalState.context = { orderIndex, productName };
-    modalState.modal.classList.remove("d-none");
-      modal.style.display = "flex";
     modalState.modal.style.display = "flex";
   };
 
