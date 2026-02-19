@@ -8,6 +8,16 @@ const myHistoryScript = (LZString, bootstrap) => {
   let lockOverlay;
   let lockInput;
 
+  const normalizeTextColor = (value) => {
+    if (typeof value !== "string") return "#ff0000";
+    const normalized = value.trim();
+    return /^#[0-9a-fA-F]{6}$/.test(normalized) ? normalized : "#ff0000";
+  };
+
+  const normalizeProductName = (value) => String(value || "").trim();
+  const cloneItemNotes = (itemNotes) =>
+    JSON.parse(JSON.stringify(itemNotes || {}));
+
   const setHistoryLocked = (locked) => {
     document.body.classList.toggle("yoichi-history-locked", locked);
     if (!lockOverlay) {
@@ -106,11 +116,12 @@ const myHistoryScript = (LZString, bootstrap) => {
 
   class Product {
     static products = [];
-    constructor(name, price, discountQty = 0, discountAmount = 0) {
+    constructor(name, price, discountQty = 0, discountAmount = 0, textColor = "#ff0000") {
       this.name = name;
       this.price = price;
       this.discountQty = discountQty;
       this.discountAmount = discountAmount;
+      this.textColor = normalizeTextColor(textColor);
       Product.products.push(this);
     }
 
@@ -124,7 +135,7 @@ const myHistoryScript = (LZString, bootstrap) => {
         return "沒歷史紀錄或短缺";
       }
       Product.products = [];
-      data.forEach(({ name, price, discountQty, discountAmount }) => {
+      data.forEach(({ name, price, discountQty, discountAmount, textColor }) => {
         let safeName = String(name || "").trim();
         let safePrice = Number(price);
         if (!safeName || !Number.isFinite(safePrice) || safePrice <= 0) {
@@ -134,7 +145,8 @@ const myHistoryScript = (LZString, bootstrap) => {
           safeName,
           safePrice,
           Number(discountQty) || 0,
-          Number(discountAmount) || 0
+          Number(discountAmount) || 0,
+          normalizeTextColor(textColor)
         );
         // 這邊直接改變了所以才不用回傳!
       });
@@ -223,7 +235,8 @@ const myHistoryScript = (LZString, bootstrap) => {
       totalPrice,
       orderTime,
       orderDate,
-      status
+      status,
+      itemNotes
     ) {
       // 短路做法  JS 獨有 特性 ，JAVA無。
       this.productsLog = productsLog || Product.products;
@@ -232,6 +245,7 @@ const myHistoryScript = (LZString, bootstrap) => {
       this.orderTime = orderTime || generateTime("time");
       this.orderDate = orderDate || generateTime("date");
       this.status = status || "pending";
+      this.itemNotes = cloneItemNotes(itemNotes);
       // status : pending paid fulfill
       Order.orders.push(this);
       // 生成完畢.........無論 [選取資料] 從何取得都 清空。
@@ -288,32 +302,34 @@ const myHistoryScript = (LZString, bootstrap) => {
           orderTime,
           orderDate,
           status,
+          itemNotes,
         }) => {
-          Product.products = []; //前後都要清空 ， 我只是做map 創新物件。
-          PickedProduct.pickedProducts = [];
-          //  如果displayProducts有需求 則使用讀取後的Order.orders內的資訊去查詢才正確!
-          productsLog = productsLog.map(
-            ({ name, price, discountQty, discountAmount }) => {
-              return new Product(
-                name,
-                Number(price),
-                Number(discountQty) || 0,
-                Number(discountAmount) || 0
-              );
-            }
-          );
-          details = details.map(({ pickedName, pickedNumber }) => {
-            return new PickedProduct(pickedName, pickedNumber);
-          });
-          Product.products = [];
-          PickedProduct.pickedProducts = [];
+          const safeProductsLog = Array.isArray(productsLog)
+            ? productsLog.map(
+                ({ name, price, discountQty, discountAmount, textColor }) => ({
+                  name: normalizeProductName(name),
+                  price: Number(price),
+                  discountQty: Number(discountQty) || 0,
+                  discountAmount: Number(discountAmount) || 0,
+                  textColor: normalizeTextColor(textColor),
+                })
+              )
+            : [];
+          const safeDetails = Array.isArray(details)
+            ? details.map(({ pickedName, pickedNumber }) => ({
+                pickedName: normalizeProductName(pickedName),
+                pickedNumber,
+              }))
+            : [];
+
           return new Order(
-            productsLog,
-            details,
+            safeProductsLog,
+            safeDetails,
             totalPrice,
             orderTime,
             orderDate,
-            status
+            status,
+            itemNotes
           ); //如果有傳入則用傳入的資訊
         }
       );
@@ -354,23 +370,76 @@ const myHistoryScript = (LZString, bootstrap) => {
       }
     }
   }
+  const getProductOrderMeta = () => {
+    const productIndexMap = new Map();
+    const productColorMap = new Map();
+    Product.products.forEach((product, index) => {
+      productIndexMap.set(normalizeProductName(product.name), index);
+      productColorMap.set(
+        normalizeProductName(product.name),
+        normalizeTextColor(product.textColor)
+      );
+    });
+    return { productIndexMap, productColorMap };
+  };
+
+  const sortPickedDetailsByProductOrder = (details = [], productIndexMap) =>
+    [...details].sort((a, b) => {
+      const aName = normalizeProductName(a.pickedName);
+      const bName = normalizeProductName(b.pickedName);
+      const ai = productIndexMap.has(aName)
+        ? productIndexMap.get(aName)
+        : Number.MAX_SAFE_INTEGER;
+      const bi = productIndexMap.has(bName)
+        ? productIndexMap.get(bName)
+        : Number.MAX_SAFE_INTEGER;
+      if (ai === bi) return aName.localeCompare(bName);
+      return ai - bi;
+    });
+
+  const buildOrderDetailsHtml = (details = [], productColorMap) =>
+    details
+      .map(
+        (pick) => ` <div class="order-detail">
+        <div class="order-p-name"><p style="color:${
+          productColorMap.get(normalizeProductName(pick.pickedName)) || "inherit"
+        }">${pick.pickedName}</p></div>
+                <div class="order-p-number"><p>${pick.pickedNumber}</p></div> </div> `
+      )
+      .join("");
+
+  const closeAllPopovers = () => {
+    document.querySelectorAll('[data-bs-toggle="popover"]').forEach((trigger) => {
+      try {
+        const instance = bootstrap.Popover.getInstance(trigger);
+        if (instance) {
+          instance.hide();
+          instance.dispose();
+        }
+      } catch (error) {
+        console.warn("popover dispose 失敗", error);
+      }
+      trigger.removeAttribute("aria-describedby");
+    });
+    document.querySelectorAll(".popover").forEach((el) => el.remove());
+  };
+
   // 會顯示所有狀態的版本
   function loadOrderPage(date) {
+    closeAllPopovers();
     let orderScreen = document.querySelector(".presentation-Area");
     // 清空避免二度呼叫內部已經有東西又追加!
     orderScreen.innerHTML = "";
     let sellLog = {};
     let fulfilledOrdersTotalAmount = 0;
+    const { productIndexMap, productColorMap } = getProductOrderMeta();
     (function create_NotFulfilled_Orders() {
       Order.orders.forEach((order, index) => {
-        let products = ``;
-        order.details.forEach((pick) => {
-          products =
-            products +
-            ` <div class="order-detail">
-        <div class="order-p-name"><p>${pick.pickedName}</p></div>
-                <div class="order-p-number"><p>${pick.pickedNumber}</p></div> </div> `;
-        });
+        const sortedDetails = sortPickedDetailsByProductOrder(
+          order.details,
+          productIndexMap
+        );
+        const products = buildOrderDetailsHtml(sortedDetails, productColorMap);
         let yoichi_order_shown = document.createElement("section");
         yoichi_order_shown.classList = "yoichi-order-shown";
         let btnMsg = "按我";
@@ -390,11 +459,12 @@ const myHistoryScript = (LZString, bootstrap) => {
           btnMsg = "完成";
           btnColor = "info";
           // console.log("訂單", index);
-          order.details.forEach((p) => {
-            if (sellLog[p.pickedName] == undefined) {
-              sellLog[p.pickedName] = Number(p.pickedNumber);
+          sortedDetails.forEach((p) => {
+            const pickedName = normalizeProductName(p.pickedName);
+            if (sellLog[pickedName] == undefined) {
+              sellLog[pickedName] = Number(p.pickedNumber);
             } else {
-              sellLog[p.pickedName] += Number(p.pickedNumber);
+              sellLog[pickedName] += Number(p.pickedNumber);
               // console.log("選取數量", sellLog[p.pickedName]);
             }
           });
@@ -446,17 +516,17 @@ const myHistoryScript = (LZString, bootstrap) => {
     })();
     (function create_fulfilledOrdersSummary() {
       let products = ``;
-      for (let name in sellLog) {
-        // console.log(sellLog[name], name);
-        // 3 '蔥肉串'
-        // 3 '香腸'
-        // 3 '豬肉串'
+      Product.products.forEach((product) => {
+        const soldQty = Number(sellLog[normalizeProductName(product.name)]) || 0;
+        if (soldQty <= 0) return;
         products =
           products +
           ` <div class="order-detail">
-        <div class="order-p-name"><p>${name}</p></div>
-                <div class="order-p-number"><p>${sellLog[name]}</p></div> </div> `;
-      }
+        <div class="order-p-name"><p style="color:${normalizeTextColor(
+          product.textColor
+        )}">${product.name}</p></div>
+                <div class="order-p-number"><p>${soldQty}</p></div> </div> `;
+      });
       // console.log(fulfilledOrdersTotalAmount); // 345元
       let yoichi_order_shown = document.createElement("section");
       yoichi_order_shown.classList = "yoichi-order-shown";
@@ -516,7 +586,7 @@ const myHistoryScript = (LZString, bootstrap) => {
               body.innerHTML = `
                     <div class="fulfillOrder order-${header_num}"><button>完成</button></div>
                     <div class="reviseOrder order-${header_num}"><button>作廢</button></div>
-                    <div class="paidOrder order-${header_num}"><button>付款</button></div>
+                    <div class="paidOrder order-${header_num}"><button>${Order.orders[header_num].status == "paid" ? "取消付款" : "付款"}</button></div>
               `;
               let paidBtn = document.querySelector(
                 `.paidOrder.order-${header_num} button`
@@ -529,18 +599,13 @@ const myHistoryScript = (LZString, bootstrap) => {
               );
               paidBtn.addEventListener("click", (e) => {
                 //console.log("paidBtn數字是" + header_num);
-                // 去修改對應編號的 order 狀態為 paid
-                Order.orders[header_num].status = "paid";
+                // 付款狀態可切換，fulfilled 也可退回 paid 以回工作區
+                Order.orders[header_num].status =
+                  Order.orders[header_num].status == "paid" ? "pending" : "paid";
                 // document
                 //   .querySelector(`[data-bs-title="${header_num}"]`)
                 //   .click();
-                document
-                  .querySelectorAll("button.yoichi-triplebtn")
-                  .forEach((b) => {
-                    if (b.hasAttribute("aria-describedby")) {
-                      b.click();
-                    }
-                  });
+                closeAllPopovers();
                 Order.historyUpdate(date); //保存狀態否則畫面f5刷新就沒了
                 //console.log(Order.orders[header_num]);
                 //   displayProducts("new"); //編輯到一半付錢就視同放棄修改
@@ -564,13 +629,7 @@ const myHistoryScript = (LZString, bootstrap) => {
                 // document
                 //   .querySelector(`[data-bs-title="${header_num}"]`)
                 //   .click();
-                document
-                  .querySelectorAll("button.yoichi-triplebtn")
-                  .forEach((b) => {
-                    if (b.hasAttribute("aria-describedby")) {
-                      b.click();
-                    }
-                  });
+                closeAllPopovers();
                 Order.historyUpdate(date); //保存狀態否則畫面f5刷新就沒了
                 //console.log(Order.orders[header_num]);
                 //   displayProducts("new"); //編輯到一半付錢就視同放棄修改
@@ -607,13 +666,7 @@ const myHistoryScript = (LZString, bootstrap) => {
                       "opacityTransitions 2.1s ease forwards";
                   })();
                 }
-                document
-                  .querySelectorAll("button.yoichi-triplebtn")
-                  .forEach((b) => {
-                    if (b.hasAttribute("aria-describedby")) {
-                      b.click();
-                    }
-                  });
+                closeAllPopovers();
               });
             }
           }
