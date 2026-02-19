@@ -99,15 +99,15 @@ const myEditScript = (LZString, bootstrap) => {
     }
     static generateDefault() {
       Product.products = [];
-      new Product("一串心", 20, 0, 0);
-      new Product("雞腿串", 65, 0, 0);
-      new Product("豬肉串", 45, 0, 0);
-      new Product("香腸", 45, 0, 0);
-      new Product("蔥肉串", 45, 0, 0);
-      new Product("雞骨輪", 60, 2, 20);
-      new Product("雞屁股", 50, 0, 0);
-      new Product("雞心", 50, 0, 0);
-      new Product("米腸", 40, 0, 0);
+      new Product("香腸", 45, 0, 0, "#ff0000");
+      new Product("蔥肉串", 45, 0, 0, "#00a803");
+      new Product("豬肉串", 45, 0, 0, "#fd3030");
+      new Product("一串心", 20, 0, 0, "#ff0000");
+      new Product("雞腿串", 65, 0, 0, "#2e58ff");
+      new Product("七里香", 50, 0, 0, "#3859ff");
+      new Product("雞心", 50, 0, 0, "#4542ff");
+      new Product("雞骨輪", 60, 2, 20, "#325afb");
+      new Product("米腸", 40, 0, 0, "#ff9061");
       Product.historyUpdate();
     }
   }
@@ -484,48 +484,509 @@ const myEditScript = (LZString, bootstrap) => {
     });
   })();
 
-  (function setupWorkSummaryToggle() {
-    const workSettingsKey = "yoichi-work-settings";
-    const summaryToggleBtn = document.querySelector(
-      ".yoichi-summary-toggle-btn"
-    );
+  (function setupFlavorSettingsManager() {
+    const flavorKey = "yoichi-note-options";
+    const summaryToggleBtn = document.querySelector(".yoichi-summary-toggle-btn");
     if (!summaryToggleBtn) return;
 
-    const normalizeSettings = (settings) => {
-      if (settings == null || typeof settings !== "object") {
-        return { showSummary: true };
+    const defaultOptions = [
+      { id: "normal", label: "普", color: "#111827", group: "" },
+      { id: "noSesame", label: "不芝麻", color: "#78eaf2", group: "" },
+      { id: "noPepper", label: "不胡椒", color: "#80f5e7", group: "" },
+      { id: "sesameMore", label: "芝麻多", color: "#9ebeff", group: "sesame" },
+      { id: "sesameLess", label: "芝麻少", color: "#99b6ff", group: "sesame" },
+      { id: "pepperMore", label: "胡椒多", color: "#111827", group: "pepper" },
+      { id: "pepperLess", label: "胡椒少", color: "#111827", group: "pepper" },
+      { id: "veryMild", label: "微微辣", color: "#ffd270", group: "spice" },
+      { id: "mild", label: "微辣", color: "#ffa55c", group: "spice" },
+      { id: "small", label: "小辣", color: "#ffb1a3", group: "spice" },
+      { id: "medium", label: "中辣", color: "#ff6c52", group: "spice" },
+      { id: "large", label: "大辣", color: "#ff1100", group: "spice" },
+    ];
+
+    const normalizeOptions = (raw) => {
+      if (!Array.isArray(raw) || raw.length === 0) {
+        return defaultOptions;
       }
-      return {
-        showSummary: settings.showSummary !== false,
-      };
+      const normalized = raw
+        .map((item, index) => {
+          const label = String(item?.label || "").trim();
+          if (!label) return null;
+          return {
+            id: String(item?.id || `custom-${index}`).trim() || `custom-${index}`,
+            label,
+            color: normalizeTextColor(item?.color || "#111827"),
+            group:
+              typeof item?.group === "string" && item.group.trim()
+                ? item.group.trim()
+                : "",
+          };
+        })
+        .filter(Boolean);
+      return normalized.length ? normalized : defaultOptions;
     };
 
-    const readSettings = () => {
-      const savedSettings = safeParseJSON(safeStorageGet(workSettingsKey));
-      return normalizeSettings(savedSettings);
-    };
+    const readOptions = () =>
+      normalizeOptions(safeParseJSON(safeStorageGet(flavorKey)));
 
-    const writeSettings = (settings) => {
-      const normalized = normalizeSettings(settings);
-      safeStorageSet(workSettingsKey, JSON.stringify(normalized));
+    const writeOptions = (options) => {
+      const normalized = normalizeOptions(options);
+      safeStorageSet(flavorKey, JSON.stringify(normalized));
       return normalized;
     };
 
-    const renderToggleBtn = (showSummary) => {
-      summaryToggleBtn.innerText = showSummary
-        ? "工作區隱藏下方總計"
-        : "工作區顯示下方總計";
-      summaryToggleBtn.classList.toggle("btn-outline-success", showSummary);
-      summaryToggleBtn.classList.toggle("btn-outline-warning", !showSummary);
+    summaryToggleBtn.innerText = "口味個人化設定";
+    summaryToggleBtn.classList.remove("btn-outline-success", "btn-outline-warning");
+    summaryToggleBtn.classList.add("btn-outline-primary");
+
+    const modal = document.createElement("section");
+    modal.className = "yoichi-note-modal yoichi-note-modal--settings";
+    modal.style.cssText =
+      "position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:1rem;";
+    modal.innerHTML = `
+      <div class="yoichi-note-modal-panel">
+        <div class="yoichi-note-modal-header">
+          <h4 class="yoichi-note-modal-title">口味個人化設定</h4>
+          <button type="button" class="btn btn-outline-secondary yoichi-note-close">關閉</button>
+        </div>
+        <div class="yoichi-note-modal-body">
+          <div class="yoichi-note-grid-wrap">
+            <table class="yoichi-note-grid-table">
+              <thead><tr><th>#</th><th>名稱</th><th>群組</th><th>顏色</th><th>操作</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div style="margin-top:.6rem;display:flex;gap:.5rem;">
+            <button type="button" class="btn btn-outline-primary yoichi-flavor-add">新增口味</button>
+            <button type="button" class="btn btn-outline-secondary yoichi-flavor-reset">重置預設</button>
+          </div>
+        </div>
+        <div class="yoichi-note-modal-footer">
+          <button type="button" class="btn btn-primary yoichi-flavor-save">儲存設定</button>
+        </div>
+      </div>
+    `;
+    document.body.append(modal);
+    modal.style.display = "none";
+
+    const tbody = modal.querySelector("tbody");
+    const closeBtn = modal.querySelector(".yoichi-note-close");
+    const addBtn = modal.querySelector(".yoichi-flavor-add");
+    const resetBtn = modal.querySelector(".yoichi-flavor-reset");
+    const saveBtn = modal.querySelector(".yoichi-flavor-save");
+    let editingOptions = [];
+
+    const renderRows = () => {
+      tbody.innerHTML = editingOptions
+        .map(
+          (option, index) => `
+            <tr data-index="${index}">
+              <td>${index + 1}</td>
+              <td><input type="text" class="form-control yoichi-flavor-label" value="${option.label}" /></td>
+              <td><input type="text" class="form-control yoichi-flavor-group" value="${option.group || ""}" placeholder="例如 spice" /></td>
+              <td><input type="color" class="form-control form-control-color yoichi-flavor-color" value="${normalizeTextColor(option.color)}" /></td>
+              <td style="display:flex;gap:.4rem;justify-content:center;">
+                <button type="button" class="btn btn-sm btn-outline-secondary yoichi-flavor-up">上移</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary yoichi-flavor-down">下移</button>
+                <button type="button" class="btn btn-sm btn-outline-danger yoichi-flavor-remove">刪除</button>
+              </td>
+            </tr>`
+        )
+        .join("");
     };
 
-    let settings = writeSettings(readSettings());
-    renderToggleBtn(settings.showSummary);
+    const openModal = () => {
+      editingOptions = readOptions().map((item) => ({ ...item }));
+      renderRows();
+      modal.style.display = "flex";
+    };
 
-    summaryToggleBtn.addEventListener("click", () => {
-      settings = writeSettings({ showSummary: !settings.showSummary });
-      renderToggleBtn(settings.showSummary);
+    const closeModal = () => {
+      modal.style.display = "none";
+    };
+
+    summaryToggleBtn.addEventListener("click", openModal);
+    closeBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeModal();
     });
+
+    addBtn.addEventListener("click", () => {
+      editingOptions.push({
+        id: `custom-${Date.now()}-${editingOptions.length}`,
+        label: `口味${editingOptions.length + 1}`,
+        color: "#111827",
+        group: "",
+      });
+      renderRows();
+    });
+
+    resetBtn.addEventListener("click", () => {
+      editingOptions = defaultOptions.map((item) => ({ ...item }));
+      renderRows();
+    });
+
+    tbody.addEventListener("input", (event) => {
+      const tr = event.target.closest("tr[data-index]");
+      if (!tr) return;
+      const index = Number(tr.dataset.index);
+      if (!editingOptions[index]) return;
+      if (event.target.classList.contains("yoichi-flavor-label")) {
+        editingOptions[index].label = String(event.target.value || "");
+      }
+      if (event.target.classList.contains("yoichi-flavor-color")) {
+        editingOptions[index].color = normalizeTextColor(event.target.value);
+      }
+      if (event.target.classList.contains("yoichi-flavor-group")) {
+        editingOptions[index].group = String(event.target.value || "").trim();
+      }
+    });
+
+    tbody.addEventListener("click", (event) => {
+      const tr = event.target.closest("tr[data-index]");
+      if (!tr) return;
+      const index = Number(tr.dataset.index);
+      if (!editingOptions[index]) return;
+      if (event.target.classList.contains("yoichi-flavor-up") && index > 0) {
+        [editingOptions[index - 1], editingOptions[index]] = [
+          editingOptions[index],
+          editingOptions[index - 1],
+        ];
+        renderRows();
+      }
+      if (
+        event.target.classList.contains("yoichi-flavor-down") &&
+        index < editingOptions.length - 1
+      ) {
+        [editingOptions[index + 1], editingOptions[index]] = [
+          editingOptions[index],
+          editingOptions[index + 1],
+        ];
+        renderRows();
+      }
+      if (event.target.classList.contains("yoichi-flavor-remove")) {
+        editingOptions.splice(index, 1);
+        renderRows();
+      }
+    });
+
+    saveBtn.addEventListener("click", () => {
+      editingOptions = writeOptions(editingOptions);
+      closeModal();
+    });
+  })();
+
+  (function setupCardScaleManager() {
+    const key = "yoichi-card-cell-scale";
+    const scaleBtn = document.querySelector(".yoichi-card-scale-btn");
+    if (!scaleBtn) return;
+    scaleBtn.innerText = "卡片格子UI";
+
+    const normalizeScale = (value) => {
+      const num = Number(value);
+      if (!Number.isFinite(num)) return 1.3;
+      return Math.min(2, Math.max(1, Number(num.toFixed(2))));
+    };
+
+    const applyScale = (value) => {
+      const scale = normalizeScale(value);
+      document.documentElement.style.setProperty("--yoichi-card-cell-scale", String(scale));
+      return scale;
+    };
+
+    const savedScale = normalizeScale(safeStorageGet(key));
+    applyScale(savedScale);
+
+    const modal = document.createElement("section");
+    modal.className = "yoichi-note-modal yoichi-note-modal--settings";
+    modal.style.cssText =
+      "position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:1rem;";
+    modal.innerHTML = `
+      <div class="yoichi-note-modal-panel" style="width:min(92vw,560px)">
+        <div class="yoichi-note-modal-header">
+          <h4 class="yoichi-note-modal-title">卡片格子調整</h4>
+          <button type="button" class="btn btn-outline-secondary yoichi-note-close">關閉</button>
+        </div>
+        <div class="yoichi-note-modal-body" style="display:grid;gap:.8rem;">
+          <label class="form-label" style="margin:0;">放大倍率（100% ~ 200%）</label>
+          <input type="range" class="form-range yoichi-card-scale-range" min="100" max="200" step="5" />
+          <input type="number" class="form-control yoichi-card-scale-number" min="100" max="200" step="5" />
+        </div>
+        <div class="yoichi-note-modal-footer">
+          <button type="button" class="btn btn-primary yoichi-card-scale-save">儲存設定</button>
+        </div>
+      </div>
+    `;
+    document.body.append(modal);
+    modal.style.display = "none";
+
+    const rangeInput = modal.querySelector(".yoichi-card-scale-range");
+    const numberInput = modal.querySelector(".yoichi-card-scale-number");
+    const closeBtn = modal.querySelector(".yoichi-note-close");
+    const saveBtn = modal.querySelector(".yoichi-card-scale-save");
+
+    const syncInputs = (percent) => {
+      const pct = Math.min(200, Math.max(100, Number(percent) || 130));
+      rangeInput.value = String(pct);
+      numberInput.value = String(pct);
+      applyScale(pct / 100);
+    };
+
+    const openModal = () => {
+      const scale = normalizeScale(safeStorageGet(key));
+      syncInputs(Math.round(scale * 100));
+      modal.style.display = "flex";
+    };
+
+    const closeModal = () => {
+      modal.style.display = "none";
+    };
+
+    rangeInput.addEventListener("input", () => syncInputs(rangeInput.value));
+    numberInput.addEventListener("input", () => syncInputs(numberInput.value));
+    saveBtn.addEventListener("click", () => {
+      const scale = normalizeScale((Number(numberInput.value) || 130) / 100);
+      safeStorageSet(key, String(scale));
+      applyScale(scale);
+      closeModal();
+    });
+    closeBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeModal();
+    });
+    scaleBtn.addEventListener("click", openModal);
+  })();
+
+  (function setupActionUiManager() {
+    const key = "yoichi-action-ui-settings";
+    const actionBtn = document.querySelector(".yoichi-action-ui-btn");
+    if (!actionBtn) return;
+
+    const normalizeSettings = (raw) => {
+      const width = Math.min(420, Math.max(180, Number(raw?.width) || 224));
+      const buttonHeight = Math.min(84, Math.max(40, Number(raw?.buttonHeight) || 48));
+      const badgeScale = Math.min(1.6, Math.max(0.6, Number(raw?.badgeScale) || 1));
+      return { width, buttonHeight, badgeScale };
+    };
+
+    const applySettings = (settings) => {
+      const safe = normalizeSettings(settings);
+      document.documentElement.style.setProperty("--yoichi-action-menu-width", `${safe.width}px`);
+      document.documentElement.style.setProperty(
+        "--yoichi-action-menu-button-height",
+        `${safe.buttonHeight}px`
+      );
+      document.documentElement.style.setProperty(
+        "--yoichi-action-menu-badge-scale",
+        String(safe.badgeScale)
+      );
+      return safe;
+    };
+
+    const readSettings = () =>
+      normalizeSettings(safeParseJSON(safeStorageGet(key)) || {});
+
+    const saveSettings = (settings) => {
+      const safe = normalizeSettings(settings);
+      safeStorageSet(key, JSON.stringify(safe));
+      return safe;
+    };
+
+    applySettings(readSettings());
+
+    const modal = document.createElement("section");
+    modal.className = "yoichi-note-modal yoichi-note-modal--settings";
+    modal.style.cssText =
+      "position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:1rem;";
+    modal.innerHTML = `
+      <div class="yoichi-note-modal-panel" style="width:min(92vw,560px)">
+        <div class="yoichi-note-modal-header">
+          <h4 class="yoichi-note-modal-title">按我UI</h4>
+          <button type="button" class="btn btn-outline-secondary yoichi-note-close">關閉</button>
+        </div>
+        <div class="yoichi-note-modal-body" style="display:grid;gap:.8rem;">
+          <label class="form-label" style="margin:0;">框框寬度(px)</label>
+          <input type="range" class="form-range yoichi-action-width-range" min="180" max="420" step="10" />
+          <label class="form-label" style="margin:0;">按鈕高度(px)</label>
+          <input type="range" class="form-range yoichi-action-height-range" min="40" max="84" step="2" />
+          <label class="form-label" style="margin:0;">數字縮放比例</label>
+          <input type="range" class="form-range yoichi-action-badge-range" min="60" max="160" step="5" />
+        </div>
+        <div class="yoichi-note-modal-footer">
+          <button type="button" class="btn btn-primary yoichi-action-ui-save">儲存設定</button>
+        </div>
+      </div>
+    `;
+    document.body.append(modal);
+    modal.style.display = "none";
+
+    const closeBtn = modal.querySelector(".yoichi-note-close");
+    const saveBtn = modal.querySelector(".yoichi-action-ui-save");
+    const widthRange = modal.querySelector(".yoichi-action-width-range");
+    const heightRange = modal.querySelector(".yoichi-action-height-range");
+    const badgeRange = modal.querySelector(".yoichi-action-badge-range");
+
+    const loadToInputs = () => {
+      const s = readSettings();
+      widthRange.value = String(s.width);
+      heightRange.value = String(s.buttonHeight);
+      badgeRange.value = String(Math.round(s.badgeScale * 100));
+      applySettings(s);
+    };
+
+    const previewFromInputs = () => {
+      applySettings({
+        width: Number(widthRange.value),
+        buttonHeight: Number(heightRange.value),
+        badgeScale: Number(badgeRange.value) / 100,
+      });
+    };
+
+    [widthRange, heightRange, badgeRange].forEach((el) =>
+      el.addEventListener("input", previewFromInputs)
+    );
+
+    const openModal = () => {
+      loadToInputs();
+      modal.style.display = "flex";
+    };
+    const closeModal = () => {
+      modal.style.display = "none";
+    };
+    closeBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeModal();
+    });
+    saveBtn.addEventListener("click", () => {
+      const safe = saveSettings({
+        width: Number(widthRange.value),
+        buttonHeight: Number(heightRange.value),
+        badgeScale: Number(badgeRange.value) / 100,
+      });
+      applySettings(safe);
+      closeModal();
+    });
+
+    actionBtn.addEventListener("click", openModal);
+  })();
+
+  (function setupNoteUiManager() {
+    const key = "yoichi-note-ui-settings";
+    const noteUiBtn = document.querySelector(".yoichi-note-ui-btn");
+    if (!noteUiBtn) return;
+
+    const normalizeSettings = (raw) => {
+      const widthPct = Math.min(100, Math.max(60, Number(raw?.widthPct) || 96));
+      const heightPct = Math.min(96, Math.max(60, Number(raw?.heightPct) || 90));
+      const saveHeight = Math.min(96, Math.max(44, Number(raw?.saveHeight) || 64));
+      const saveMode = raw?.saveMode === "right" ? "right" : "full";
+      return { widthPct, heightPct, saveHeight, saveMode };
+    };
+
+    const applySettings = (settings) => {
+      const safe = normalizeSettings(settings);
+      document.documentElement.style.setProperty("--yoichi-note-panel-width", `${safe.widthPct}vw`);
+      document.documentElement.style.setProperty("--yoichi-note-panel-height", `${safe.heightPct}vh`);
+      document.documentElement.style.setProperty("--yoichi-note-save-height", `${safe.saveHeight}px`);
+      document.documentElement.classList.toggle(
+        "yoichi-note-save-mode-right",
+        safe.saveMode === "right"
+      );
+      return safe;
+    };
+
+    const readSettings = () => normalizeSettings(safeParseJSON(safeStorageGet(key)) || {});
+    const saveSettings = (settings) => {
+      const safe = normalizeSettings(settings);
+      safeStorageSet(key, JSON.stringify(safe));
+      return safe;
+    };
+
+    applySettings(readSettings());
+
+    const modal = document.createElement("section");
+    modal.className = "yoichi-note-modal yoichi-note-modal--settings";
+    modal.style.cssText =
+      "position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:1rem;";
+    modal.innerHTML = `
+      <div class="yoichi-note-modal-panel" style="width:min(92vw,560px)">
+        <div class="yoichi-note-modal-header">
+          <h4 class="yoichi-note-modal-title">備註UI</h4>
+          <button type="button" class="btn btn-outline-secondary yoichi-note-close">關閉</button>
+        </div>
+        <div class="yoichi-note-modal-body" style="display:grid;gap:.8rem;">
+          <label class="form-label" style="margin:0;">備註視窗寬度(%)</label>
+          <input type="range" class="form-range yoichi-note-width-range" min="60" max="100" step="2" />
+          <label class="form-label" style="margin:0;">備註視窗高度(%)</label>
+          <input type="range" class="form-range yoichi-note-height-range" min="60" max="96" step="2" />
+          <label class="form-label" style="margin:0;">儲存按鈕高度(px)</label>
+          <input type="range" class="form-range yoichi-note-save-height-range" min="44" max="96" step="2" />
+          <label class="form-label" style="margin:0;">儲存按鈕位置</label>
+          <select class="form-select yoichi-note-save-mode">
+            <option value="full">整條底部</option>
+            <option value="right">右下角按鈕</option>
+          </select>
+        </div>
+        <div class="yoichi-note-modal-footer">
+          <button type="button" class="btn btn-primary yoichi-note-ui-save">儲存設定</button>
+        </div>
+      </div>
+    `;
+    document.body.append(modal);
+    modal.style.display = "none";
+
+    const closeBtn = modal.querySelector(".yoichi-note-close");
+    const saveBtn = modal.querySelector(".yoichi-note-ui-save");
+    const widthRange = modal.querySelector(".yoichi-note-width-range");
+    const heightRange = modal.querySelector(".yoichi-note-height-range");
+    const saveHeightRange = modal.querySelector(".yoichi-note-save-height-range");
+    const saveModeSelect = modal.querySelector(".yoichi-note-save-mode");
+
+    const loadToInputs = () => {
+      const s = readSettings();
+      widthRange.value = String(s.widthPct);
+      heightRange.value = String(s.heightPct);
+      saveHeightRange.value = String(s.saveHeight);
+      saveModeSelect.value = s.saveMode;
+      applySettings(s);
+    };
+
+    const previewFromInputs = () => {
+      applySettings({
+        widthPct: Number(widthRange.value),
+        heightPct: Number(heightRange.value),
+        saveHeight: Number(saveHeightRange.value),
+        saveMode: saveModeSelect.value,
+      });
+    };
+
+    [widthRange, heightRange, saveHeightRange, saveModeSelect].forEach((el) =>
+      el.addEventListener("input", previewFromInputs)
+    );
+
+    const openModal = () => {
+      loadToInputs();
+      modal.style.display = "flex";
+    };
+    const closeModal = () => {
+      modal.style.display = "none";
+    };
+    closeBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeModal();
+    });
+    saveBtn.addEventListener("click", () => {
+      const safe = saveSettings({
+        widthPct: Number(widthRange.value),
+        heightPct: Number(heightRange.value),
+        saveHeight: Number(saveHeightRange.value),
+        saveMode: saveModeSelect.value,
+      });
+      applySettings(safe);
+      closeModal();
+    });
+
+    noteUiBtn.addEventListener("click", openModal);
   })();
 };
 export default myEditScript;

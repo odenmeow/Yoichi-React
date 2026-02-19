@@ -40,6 +40,464 @@ const myWorkScript = (LZString, bootstrap) => {
     return /^#[0-9a-fA-F]{6}$/.test(normalized) ? normalized : "#ff0000";
   };
 
+  const normalizeProductName = (value) => String(value || "").trim();
+
+  const NOTE_OPTIONS_DEFAULT = [
+    { id: "normal", label: "普", color: "#111827", group: "" },
+    { id: "noSesame", label: "不芝麻", color: "#78eaf2", group: "" },
+    { id: "noPepper", label: "不胡椒", color: "#80f5e7", group: "" },
+    { id: "sesameMore", label: "芝麻多", color: "#9ebeff", group: "sesame" },
+    { id: "sesameLess", label: "芝麻少", color: "#99b6ff", group: "sesame" },
+    { id: "pepperMore", label: "胡椒多", color: "#111827", group: "pepper" },
+    { id: "pepperLess", label: "胡椒少", color: "#111827", group: "pepper" },
+    { id: "veryMild", label: "微微辣", color: "#ffd270", group: "spice" },
+    { id: "mild", label: "微辣", color: "#ffa55c", group: "spice" },
+    { id: "small", label: "小辣", color: "#ffb1a3", group: "spice" },
+    { id: "medium", label: "中辣", color: "#ff6c52", group: "spice" },
+    { id: "large", label: "大辣", color: "#ff1100", group: "spice" },
+  ];
+
+  const applyCardCellScale = () => {
+    const raw = safeStorageGet("yoichi-card-cell-scale");
+    const parsed = Number(raw);
+    const scale = Number.isFinite(parsed)
+      ? Math.min(2, Math.max(1, Number(parsed.toFixed(2))))
+      : 1.3;
+    document.documentElement.style.setProperty(
+      "--yoichi-card-cell-scale",
+      String(scale)
+    );
+  };
+
+  const applyActionUiSettings = () => {
+    const raw = safeParseJSON(safeStorageGet("yoichi-action-ui-settings")) || {};
+    const width = Math.min(420, Math.max(180, Number(raw?.width) || 224));
+    const buttonHeight = Math.min(84, Math.max(40, Number(raw?.buttonHeight) || 48));
+    const badgeScale = Math.min(1.6, Math.max(0.6, Number(raw?.badgeScale) || 1));
+    document.documentElement.style.setProperty("--yoichi-action-menu-width", `${width}px`);
+    document.documentElement.style.setProperty(
+      "--yoichi-action-menu-button-height",
+      `${buttonHeight}px`
+    );
+    document.documentElement.style.setProperty(
+      "--yoichi-action-menu-badge-scale",
+      String(badgeScale)
+    );
+  };
+
+  const applyNoteUiSettings = () => {
+    const raw = safeParseJSON(safeStorageGet("yoichi-note-ui-settings")) || {};
+    const widthPct = Math.min(100, Math.max(60, Number(raw?.widthPct) || 96));
+    const heightPct = Math.min(96, Math.max(60, Number(raw?.heightPct) || 90));
+    const saveHeight = Math.min(96, Math.max(44, Number(raw?.saveHeight) || 64));
+    const saveMode = raw?.saveMode === "right" ? "right" : "full";
+    document.documentElement.style.setProperty("--yoichi-note-panel-width", `${widthPct}vw`);
+    document.documentElement.style.setProperty("--yoichi-note-panel-height", `${heightPct}vh`);
+    document.documentElement.style.setProperty("--yoichi-note-save-height", `${saveHeight}px`);
+    document.documentElement.classList.toggle(
+      "yoichi-note-save-mode-right",
+      saveMode === "right"
+    );
+  };
+
+  const getNoteOptions = () => {
+    const saved = safeParseJSON(safeStorageGet("yoichi-note-options"));
+    if (!Array.isArray(saved) || saved.length === 0) {
+      return NOTE_OPTIONS_DEFAULT;
+    }
+    return saved
+      .map((option, index) => {
+        const label = String(option?.label || "").trim();
+        if (!label) return null;
+        return {
+          id: String(option?.id || `custom-${index}`).trim() || `custom-${index}`,
+          label,
+          color: normalizeTextColor(option?.color || "#111827"),
+          group:
+            typeof option?.group === "string" && option.group.trim()
+              ? option.group.trim()
+              : "",
+        };
+      })
+      .filter(Boolean);
+  };
+
+  const hasAnyNoteSelected = (row = {}, noteOptions = getNoteOptions()) =>
+    noteOptions.some((option) => option.id !== "normal" && row[option.id]);
+
+  const ensureOrderNotes = (order) => {
+    if (!order || typeof order !== "object") return {};
+    if (!order.itemNotes || typeof order.itemNotes !== "object") {
+      order.itemNotes = {};
+    }
+    return order.itemNotes;
+  };
+
+  const getOrderProductNotes = (order, productName) => {
+    const itemNotes = ensureOrderNotes(order);
+    const key = normalizeProductName(productName);
+    return Array.isArray(itemNotes[key]) ? itemNotes[key] : [];
+  };
+
+  const ensureOrderGlobalNotes = (order) => {
+    if (!order || typeof order !== "object") return {};
+    if (!order.globalNotes || typeof order.globalNotes !== "object") {
+      order.globalNotes = {};
+    }
+    return order.globalNotes;
+  };
+
+  const hasGlobalNotes = (order, noteOptions = getNoteOptions()) =>
+    hasAnyNoteSelected(ensureOrderGlobalNotes(order), noteOptions);
+
+  const getMergedRowWithGlobal = (row = {}, global = {}) => ({ ...global, ...row });
+
+  const hasOrderProductNotes = (order, productName, noteOptions) =>
+    getOrderProductNotes(order, productName).some((row) =>
+      hasAnyNoteSelected(row, noteOptions)
+    );
+
+  const cloneItemNotes = (itemNotes) => JSON.parse(JSON.stringify(itemNotes || {}));
+
+  const createDefaultNoteRows = (qty) =>
+    Array.from({ length: qty }, () => ({ normal: true }));
+
+  let noteModalState = null;
+  let popoverObservers = [];
+
+  const getAlphabetLabel = (index) => {
+    let n = Number(index) || 0;
+    let out = "";
+    do {
+      out = String.fromCharCode(97 + (n % 26)) + out;
+      n = Math.floor(n / 26) - 1;
+    } while (n >= 0);
+    return out;
+  };
+
+  const getNoteModal = () => {
+    if (noteModalState) return noteModalState;
+    const modal = document.createElement("section");
+    modal.className = "yoichi-note-modal yoichi-note-modal--picker";
+    modal.style.cssText =
+      "position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:1rem;";
+    modal.innerHTML = `
+      <div class="yoichi-note-modal-panel">
+        <div class="yoichi-note-modal-header">
+          <h4 class="yoichi-note-modal-title"></h4>
+          <button type="button" class="btn btn-outline-secondary yoichi-note-close">關閉</button>
+        </div>
+        <div class="yoichi-note-modal-body">
+          <div class="yoichi-note-grid-wrap">
+            <table class="yoichi-note-grid-table">
+              <thead><tr><th>品項</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="yoichi-note-modal-footer">
+          <button type="button" class="btn btn-primary yoichi-note-save">儲存備註</button>
+        </div>
+      </div>
+    `;
+    document.body.append(modal);
+    modal.style.display = "none";
+    const closeBtn = modal.querySelector(".yoichi-note-close");
+    const saveBtn = modal.querySelector(".yoichi-note-save");
+    const tbody = modal.querySelector("tbody");
+    const theadRow = modal.querySelector("thead tr");
+    const title = modal.querySelector(".yoichi-note-modal-title");
+
+    const dragState = {
+      active: false,
+      targetValue: false,
+      pointerId: null,
+      suppressClickUntil: 0,
+    };
+
+    const setCellValue = (cellBtn, value) => {
+      if (!cellBtn) return;
+      cellBtn.dataset.selected = value ? "1" : "0";
+      cellBtn.classList.toggle("is-selected", value);
+    };
+
+    const syncNormalByRow = (tr) => {
+      const normalCell = tr.querySelector('[data-note-key="normal"]');
+      const hasSpecial = [...tr.querySelectorAll(".yoichi-note-cell-btn")].some(
+        (btn) => btn.dataset.noteKey !== "normal" && btn.dataset.selected === "1"
+      );
+      setCellValue(normalCell, !hasSpecial);
+    };
+
+    const applyCell = (btn, value) => {
+      if (!btn) return;
+      setCellValue(btn, value);
+      if (btn.dataset.noteKey === "normal" && value) {
+        btn
+          .closest("tr")
+          .querySelectorAll(".yoichi-note-cell-btn")
+          .forEach((other) => {
+            if (other.dataset.noteKey !== "normal") setCellValue(other, false);
+          });
+        return;
+      }
+      if (value && btn.dataset.noteGroup) {
+        btn
+          .closest("tr")
+          .querySelectorAll(`.yoichi-note-cell-btn[data-note-group="${btn.dataset.noteGroup}"]`)
+          .forEach((other) => {
+            if (other !== btn) setCellValue(other, false);
+          });
+      }
+      syncNormalByRow(btn.closest("tr"));
+    };
+
+    const getCellFromEvent = (target) => target.closest(".yoichi-note-cell-btn");
+
+    tbody.addEventListener("pointerdown", (event) => {
+      const btn = getCellFromEvent(event.target);
+      if (!btn) return;
+      event.preventDefault();
+      if (btn.setPointerCapture) {
+        try {
+          btn.setPointerCapture(event.pointerId);
+        } catch (error) {}
+      }
+      dragState.active = true;
+      dragState.targetValue = btn.dataset.selected !== "1";
+      dragState.pointerId = event.pointerId;
+      dragState.suppressClickUntil = Date.now() + 300;
+      applyCell(btn, dragState.targetValue);
+    });
+
+    tbody.addEventListener("pointermove", (event) => {
+      if (!dragState.active || event.pointerId !== dragState.pointerId) return;
+      const elem = document.elementFromPoint(event.clientX, event.clientY);
+      const btn = getCellFromEvent(elem || event.target);
+      if (!btn) return;
+      applyCell(btn, dragState.targetValue);
+    });
+
+    tbody.addEventListener("click", (event) => {
+      const btn = getCellFromEvent(event.target);
+      if (!btn) return;
+      if (Date.now() < dragState.suppressClickUntil) {
+        return;
+      }
+      applyCell(btn, btn.dataset.selected !== "1");
+    });
+
+    document.addEventListener("pointerup", (event) => {
+      if (dragState.pointerId !== null && event.pointerId !== dragState.pointerId) {
+        return;
+      }
+      dragState.pointerId = null;
+      dragState.active = false;
+    });
+
+    document.addEventListener("pointercancel", (event) => {
+      if (dragState.pointerId !== null && event.pointerId !== dragState.pointerId) {
+        return;
+      }
+      dragState.pointerId = null;
+      dragState.active = false;
+    });
+
+    const closeModal = () => {
+      modal.style.display = "none";
+    };
+
+    closeBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeModal();
+    });
+
+    saveBtn.addEventListener("click", () => {
+      if (!noteModalState?.context) return;
+      const { orderIndex, productName, mode } = noteModalState.context;
+      const order = Order.orders[orderIndex];
+      if (!order) return;
+      const noteOptions = getNoteOptions();
+      const rows = [...tbody.querySelectorAll("tr")].map((tr) => {
+        const row = {};
+        tr.querySelectorAll(".yoichi-note-cell-btn").forEach((btn) => {
+          row[btn.dataset.noteKey] = btn.dataset.selected === "1";
+        });
+        return row;
+      });
+      if (mode === "global") {
+        const globalNotes = ensureOrderGlobalNotes(order);
+        Object.keys(globalNotes).forEach((key) => delete globalNotes[key]);
+        if (rows[0]) {
+          Object.assign(globalNotes, rows[0]);
+        }
+      } else {
+        const notes = ensureOrderNotes(order);
+        const key = normalizeProductName(productName);
+        if (rows.some((row) => hasAnyNoteSelected(row, noteOptions))) {
+          notes[key] = rows;
+        } else {
+          delete notes[key];
+        }
+      }
+      Order.historyUpdate();
+      loadOrderPage();
+      closeModal();
+    });
+
+    noteModalState = { modal, tbody, theadRow, title, context: null };
+    return noteModalState;
+  };
+
+  const openNoteModal = (orderIndex, productName, qty, mode = "product") => {
+    const modalState = getNoteModal();
+    const order = Order.orders[orderIndex];
+    if (!order) return;
+    const noteOptions = getNoteOptions();
+    const globalNotes = ensureOrderGlobalNotes(order);
+    const notes = getOrderProductNotes(order, productName);
+    const amount = Math.max(1, Number(qty) || 0);
+    const rows =
+      mode === "global"
+        ? [globalNotes]
+        : notes.length === amount
+        ? notes
+        : createDefaultNoteRows(amount).map(() =>
+            hasAnyNoteSelected(globalNotes, noteOptions)
+              ? getMergedRowWithGlobal({}, globalNotes)
+              : { normal: true }
+          );
+
+    modalState.title.innerText =
+      mode === "global"
+        ? `訂單 ${orderIndex} 全域備註`
+        : `${productName} 備註（${amount}份）`;
+    modalState.theadRow.innerHTML = `<th>品項</th>${noteOptions
+      .map(
+        (option) =>
+          `<th style="color:${normalizeTextColor(option.color)}">${option.label}</th>`
+      )
+      .join("")}`;
+    modalState.tbody.innerHTML = rows
+      .map((row, index) => {
+        const rowName = mode === "global" ? "全域" : `${productName}${getAlphabetLabel(index)}`;
+        return `<tr><td>${rowName}</td>${noteOptions
+          .map((option) => {
+            const selected = !!row[option.id];
+            return `<td><button type="button" class="yoichi-note-cell-btn ${
+              selected ? "is-selected" : ""
+            }" data-selected="${selected ? "1" : "0"}" data-note-key="${
+              option.id
+            }" data-note-group="${option.group || ""}"></button></td>`;
+          })
+          .join("")}</tr>`;
+      })
+      .join("");
+    modalState.context = { orderIndex, productName, mode };
+    modalState.modal.style.display = "flex";
+  };
+
+  const bindOrderNoteTriggers = () => {
+    document.querySelectorAll(".yoichi-order-note-trigger").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        closeAllPopovers();
+        const orderIndex = Number(btn.dataset.orderIndex);
+        const productName = decodeURIComponent(btn.dataset.productName || "");
+        const qty = Number(btn.dataset.qty) || 1;
+        if (!Number.isFinite(orderIndex) || !productName) return;
+        openNoteModal(orderIndex, productName, qty, "product");
+      });
+    });
+    document.querySelectorAll(".yoichi-order-global-note-trigger").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        closeAllPopovers();
+        const orderIndex = Number(btn.dataset.orderIndex);
+        if (!Number.isFinite(orderIndex)) return;
+        openNoteModal(orderIndex, "全域設定", 1, "global");
+      });
+    });
+  };
+
+  const closeAllPopovers = () => {
+    document
+      .querySelectorAll(".yoichi-order-action-menu")
+      .forEach((menu) => menu.classList.add("d-none"));
+    document.querySelectorAll('[data-bs-toggle="popover"]').forEach((trigger) => {
+      try {
+        const instance = bootstrap.Popover.getInstance(trigger);
+        if (instance) {
+          instance.hide();
+        }
+      } catch (error) {
+        console.warn("popover dispose 失敗", error);
+      }
+      trigger.removeAttribute("aria-describedby");
+    });
+    document.querySelectorAll(".popover").forEach((el) => el.remove());
+  };
+
+  const resetPopoverObservers = () => {
+    popoverObservers.forEach((observer) => {
+      try {
+        observer.disconnect();
+      } catch (error) {
+        console.warn("popover observer disconnect 失敗", error);
+      }
+    });
+    popoverObservers = [];
+  };
+
+  const getProductOrderMeta = () => {
+    const productIndexMap = new Map();
+    const productColorMap = new Map();
+    Product.products.forEach((product, index) => {
+      productIndexMap.set(normalizeProductName(product.name), index);
+      productColorMap.set(
+        normalizeProductName(product.name),
+        normalizeTextColor(product.textColor)
+      );
+    });
+    return { productIndexMap, productColorMap };
+  };
+
+  const sortPickedDetailsByProductOrder = (details = [], productIndexMap) =>
+    [...details].sort((a, b) => {
+      const aName = normalizeProductName(a.pickedName);
+      const bName = normalizeProductName(b.pickedName);
+      const ai = productIndexMap.has(aName)
+        ? productIndexMap.get(aName)
+        : Number.MAX_SAFE_INTEGER;
+      const bi = productIndexMap.has(bName)
+        ? productIndexMap.get(bName)
+        : Number.MAX_SAFE_INTEGER;
+      if (ai === bi) return aName.localeCompare(bName);
+      return ai - bi;
+    });
+
+  const buildOrderDetailsHtml = (details = [], productColorMap, orderIndex, order) => {
+    const noteOptions = getNoteOptions();
+    const globalApplied = hasGlobalNotes(order, noteOptions);
+    return details
+      .map((pick) => {
+        const productName = normalizeProductName(pick.pickedName);
+        const hasNote = hasOrderProductNotes(order, productName, noteOptions);
+        const cellClass = hasNote
+          ? "yoichi-has-note"
+          : globalApplied
+          ? "yoichi-has-global-note"
+          : "";
+        const qty = Number(pick.pickedNumber) || 0;
+        return ` <div class="order-detail">
+        <div class="order-p-name yoichi-order-note-trigger ${cellClass}" data-order-index="${orderIndex}" data-product-name="${encodeURIComponent(
+          productName
+        )}" data-qty="${qty}"><p style="color:${
+          productColorMap.get(productName) || "inherit"
+        }">${pick.pickedName}</p></div>
+                <div class="order-p-number"><p>${pick.pickedNumber}</p></div> </div> `;
+      })
+      .join("");
+  };
+
   const readWorkSettings = () => {
     if (isWorkSummaryDisabled) {
       return { showSummary: false };
@@ -140,15 +598,15 @@ const myWorkScript = (LZString, bootstrap) => {
     }
     static generateDefault() {
       Product.products = [];
-      new Product("一串心", 20, 0, 0);
-      new Product("雞腿串", 65, 0, 0);
-      new Product("豬肉串", 45, 0, 0);
-      new Product("香腸", 45, 0, 0);
-      new Product("蔥肉串", 45, 0, 0);
-      new Product("雞骨輪", 60, 2, 20);
-      new Product("雞屁股", 50, 0, 0);
-      new Product("雞心", 50, 0, 0);
-      new Product("米腸", 40, 0, 0);
+      new Product("香腸", 45, 0, 0, "#ff0000");
+      new Product("蔥肉串", 45, 0, 0, "#00a803");
+      new Product("豬肉串", 45, 0, 0, "#fd3030");
+      new Product("一串心", 20, 0, 0, "#ff0000");
+      new Product("雞腿串", 65, 0, 0, "#2e58ff");
+      new Product("七里香", 50, 0, 0, "#3859ff");
+      new Product("雞心", 50, 0, 0, "#4542ff");
+      new Product("雞骨輪", 60, 2, 20, "#325afb");
+      new Product("米腸", 40, 0, 0, "#ff9061");
       Product.historyUpdate();
     }
   }
@@ -216,7 +674,9 @@ const myWorkScript = (LZString, bootstrap) => {
       totalPrice,
       orderTime,
       orderDate,
-      status
+      status,
+      itemNotes,
+      globalNotes
     ) {
       // 短路做法  JS 獨有 特性 ，JAVA無。
       this.productsLog = productsLog || Product.products;
@@ -225,6 +685,8 @@ const myWorkScript = (LZString, bootstrap) => {
       this.orderTime = orderTime || generateTime("time");
       this.orderDate = orderDate || generateTime("date");
       this.status = status || "pending";
+      this.itemNotes = cloneItemNotes(itemNotes);
+      this.globalNotes = cloneItemNotes(globalNotes);
       // status : pending paid fulfill
       Order.orders.push(this);
       // 生成完畢.........無論 [選取資料] 從何取得都 清空。
@@ -283,32 +745,35 @@ const myWorkScript = (LZString, bootstrap) => {
           orderTime,
           orderDate,
           status,
+          itemNotes,
+          globalNotes,
         }) => {
-          Product.products = []; //前後都要清空 ， 我只是做map 創新物件。
-          PickedProduct.pickedProducts = [];
-          //  如果displayProducts有需求 則使用讀取後的Order.orders內的資訊去查詢才正確!
-          productsLog = productsLog.map(
-            ({ name, price, discountQty, discountAmount }) => {
-              return new Product(
-                name,
-                Number(price),
-                Number(discountQty) || 0,
-                Number(discountAmount) || 0
-              );
-            }
-          );
-          details = details.map(({ pickedName, pickedNumber }) => {
-            return new PickedProduct(pickedName, pickedNumber);
-          });
-          Product.products = [];
-          PickedProduct.pickedProducts = [];
+          const safeProductsLog = Array.isArray(productsLog)
+            ? productsLog.map(
+                ({ name, price, discountQty, discountAmount, textColor }) => ({
+                  name: normalizeProductName(name),
+                  price: Number(price),
+                  discountQty: Number(discountQty) || 0,
+                  discountAmount: Number(discountAmount) || 0,
+                  textColor: normalizeTextColor(textColor),
+                })
+              )
+            : [];
+          const safeDetails = Array.isArray(details)
+            ? details.map(({ pickedName, pickedNumber }) => ({
+                pickedName: normalizeProductName(pickedName),
+                pickedNumber,
+              }))
+            : [];
           return new Order(
-            productsLog,
-            details,
+            safeProductsLog,
+            safeDetails,
             totalPrice,
             orderTime,
             orderDate,
-            status
+            status,
+            itemNotes,
+            globalNotes
           ); //如果有傳入則用傳入的資訊
         }
       );
@@ -364,6 +829,9 @@ const myWorkScript = (LZString, bootstrap) => {
   };
 
   Order.historyRetrieve();
+  applyCardCellScale();
+  applyActionUiSettings();
+  applyNoteUiSettings();
   applyWorkSummaryVisibility();
   console.log(Order.orders);
   // new Order();
@@ -651,6 +1119,7 @@ const myWorkScript = (LZString, bootstrap) => {
               behavior: "smooth",
               block: "start",
             });
+            targetElement.scrollTo({ left: 0, behavior: "smooth" });
           }, 100);
         })();
         loadOrderPage();
@@ -684,7 +1153,9 @@ const myWorkScript = (LZString, bootstrap) => {
             b.click();
           }
         });
+        const originalItemNotes = cloneItemNotes(Order.orders[oid]?.itemNotes);
         let o = new Order();
+        o.itemNotes = originalItemNotes;
         Order.orders.pop();
         Order.orders[oid] = o;
         displayProducts("new");
@@ -754,21 +1225,20 @@ const myWorkScript = (LZString, bootstrap) => {
   // ==========下方為訂單區，f5 (reload) 時 ，拉當天資料 ，初始顯示===========
 
   function loadOrderPage() {
+    closeAllPopovers();
+    resetPopoverObservers();
     let orderScreen = document.querySelector(".presentation-Area");
     // 清空避免二度呼叫內部已經有東西又追加!
     orderScreen.innerHTML = "";
-    let sellLog = {};
-    let fulfilledOrdersTotalAmount = 0;
+    let pendingLog = {};
+    const { productIndexMap, productColorMap } = getProductOrderMeta();
     (function create_NotFulfilled_Orders() {
       Order.orders.forEach((order, index) => {
-        let products = ``;
-        order.details.forEach((pick) => {
-          products =
-            products +
-            ` <div class="order-detail">
-        <div class="order-p-name"><p>${pick.pickedName}</p></div>
-                <div class="order-p-number"><p>${pick.pickedNumber}</p></div> </div> `;
-        });
+        const sortedDetails = sortPickedDetailsByProductOrder(
+          order.details,
+          productIndexMap
+        );
+        const products = buildOrderDetailsHtml(sortedDetails, productColorMap, index, order);
         let yoichi_order_shown = document.createElement("section");
         yoichi_order_shown.classList = "yoichi-order-shown";
         let btnMsg = "按我";
@@ -778,27 +1248,23 @@ const myWorkScript = (LZString, bootstrap) => {
           btnMsg = "已付";
           btnColor = "success";
         }
-        if (order.status == "fulfilled") {
-          // console.log("訂單", index);
-          order.details.forEach((p) => {
-            if (sellLog[p.pickedName] == undefined) {
-              sellLog[p.pickedName] = Number(p.pickedNumber);
-            } else {
-              sellLog[p.pickedName] += Number(p.pickedNumber);
-              // console.log("選取數量", sellLog[p.pickedName]);
-            }
-          });
-          fulfilledOrdersTotalAmount += order.totalPrice;
-          return; //直接跳過，不創建該訂單了
-        }
-        if (order.status == "deprecated") {
+        if (order.status == "fulfilled" || order.status == "deprecated") {
           return;
         }
+        sortedDetails.forEach((p) => {
+          const pickedName = normalizeProductName(p.pickedName);
+          if (!pickedName) return;
+          if (pendingLog[pickedName] == undefined) {
+            pendingLog[pickedName] = Number(p.pickedNumber) || 0;
+          } else {
+            pendingLog[pickedName] += Number(p.pickedNumber) || 0;
+          }
+        });
         yoichi_order_shown.innerHTML = `
    
           <div class="yoichi-card">
             <div class="yoichi-card-time-number">
-              <div class="order-time"><p>${order.orderTime}</p></div>
+              <div class="order-time yoichi-order-global-note-trigger ${hasGlobalNotes(order, getNoteOptions()) ? "yoichi-has-global-note" : ""}" data-order-index="${index}"><p>${order.orderTime}</p></div>
               <div class="order-number "><p class="with-notation">${index}</p></div>
             </div>
             <div class="yoichi-card-order-detail">
@@ -827,46 +1293,60 @@ const myWorkScript = (LZString, bootstrap) => {
         const popoverTriggerList = document.querySelectorAll(
           '[data-bs-toggle="popover"]'
         );
-        const popoverList = [...popoverTriggerList].map(
-          (popoverTriggerEl) => new bootstrap.Popover(popoverTriggerEl)
-        );
+        [...popoverTriggerList].forEach((popoverTriggerEl) => {
+          if (bootstrap.Popover.getInstance(popoverTriggerEl)) return;
+          new bootstrap.Popover(popoverTriggerEl);
+        });
       });
     })();
-    (function create_fulfilledOrdersSummary() {
-      if (isWorkSummaryDisabled) {
-        return;
-      }
+    (function create_pendingOrdersSummary() {
       let products = ``;
+      let totalPendingQty = 0;
       Product.products.forEach((product) => {
-        const soldQty = Number(sellLog[product.name]) || 0;
-        if (soldQty <= 0) return;
+        const pendingQty = Number(pendingLog[normalizeProductName(product.name)]) || 0;
+        if (pendingQty <= 0) return;
+        totalPendingQty += pendingQty;
         products =
           products +
           ` <div class="order-detail">
         <div class="order-p-name"><p style="color:${normalizeTextColor(
           product.textColor
         )}">${product.name}</p></div>
-                <div class="order-p-number"><p>${soldQty}</p></div> </div> `;
+                <div class="order-p-number"><p>${pendingQty}</p></div> </div> `;
       });
-      // console.log(fulfilledOrdersTotalAmount); // 345元
+      Object.keys(pendingLog).forEach((name) => {
+        const normalizedName = normalizeProductName(name);
+        const exists = Product.products.some(
+          (p) => normalizeProductName(p.name) === normalizedName
+        );
+        if (exists) return;
+        const pendingQty = Number(pendingLog[normalizedName]) || 0;
+        if (pendingQty <= 0) return;
+        totalPendingQty += pendingQty;
+        products += ` <div class="order-detail"><div class="order-p-name"><p>${normalizedName}</p></div><div class="order-p-number"><p>${pendingQty}</p></div></div> `;
+      });
+      if (!products) {
+        products = ` <div class="order-detail"><div class="order-p-name"><p>目前無未完成品項</p></div><div class="order-p-number"><p>0</p></div></div> `;
+      }
       let yoichi_order_shown = document.createElement("section");
-      yoichi_order_shown.classList = "yoichi-order-shown";
+      yoichi_order_shown.classList =
+        "yoichi-order-shown yoichi-order-summary-sticky";
 
       yoichi_order_shown.innerHTML = `
    
           <div class="yoichi-card">
             <div class="yoichi-card-time-number">
-              <div class="order-time"><p>商品</p></div>
-              <div class="order-number"><p>總售出</p></div>
+              <div class="order-time"><p>待製作</p></div>
+              <div class="order-number"><p>數量</p></div>
             </div>
             <div class="yoichi-card-order-detail">
               
                 ${products}
               
             </div>
-            <div class="yoichi-card-bottom yoichi-summary-card-bottom">
+            <div class="yoichi-card-bottom yoichi-pending-summary-bottom">
               <div class="order-total-price">
-                <p>${fulfilledOrdersTotalAmount}</p>
+                <p>統計數量 ${totalPendingQty}</p>
               </div>
               
             </div>
@@ -880,139 +1360,91 @@ const myWorkScript = (LZString, bootstrap) => {
       }
     })();
 
+    bindOrderNoteTriggers();
+
+    requestAnimationFrame(() => {
+      if (orderScreen && typeof orderScreen.scrollTo === "function") {
+        orderScreen.scrollTo({ left: 0, behavior: "smooth" });
+      }
+    });
+
     // 替.popover-body 裡面增加元素，然後flex，放三個按鈕!
     let btns = orderScreen.querySelectorAll(".yoichi-triplebtn");
-    // console.log(btns);
-    btns.forEach((btn, index) => {
+    btns.forEach((btn) => {
       let observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
           if (
             mutation.type === "attributes" &&
             mutation.attributeName === "aria-describedby"
           ) {
-            // console.log(
-            //   "aria-describedby 屬性已變化，值為：",
-            //   btn.getAttribute("aria-describedby")
-            // );
-            // 在這裡執行，null變化也會被偵測，所以要過濾
             let popID = btn.getAttribute("aria-describedby");
-            if (popID) {
-              let pop = document.querySelector(`#${popID}`);
-
-              pop.querySelector(".popover-body");
-              let header_num = pop.querySelector(".popover-header").innerText;
-              // console.log("數字" + header.innerText);
-              // 接著依靠數字做出訂單狀態按鈕
-              let body = pop.querySelector(".popover-body");
-              body.innerHTML = `
-                    <div class="fulfillOrder order-${header_num}"><button>完成</button></div>
-                    <div class="reviseOrder order-${header_num}"><button>修改</button></div>
-                    <div class="paidOrder order-${header_num}"><button>付款</button></div>
-              `;
-              let paidBtn = document.querySelector(
-                `.paidOrder.order-${header_num} button`
-              );
-              let reviseBtn = document.querySelector(
-                `.reviseOrder.order-${header_num} button`
-              );
-              let fulfillBtn = document.querySelector(
-                `.fulfillOrder.order-${header_num} button`
-              );
-              paidBtn.addEventListener("click", (e) => {
-                // console.log("paidBtn數字是" + header_num);
-                // 去修改對應編號的 order 狀態為 paid
-                Order.orders[header_num].status = "paid";
-                document
-                  .querySelectorAll("button.yoichi-triplebtn")
-                  .forEach((b) => {
-                    if (b.hasAttribute("aria-describedby")) {
-                      console.log("被點囉");
-                      b.click();
-                    }
-                  });
-                Order.historyUpdate(); //保存狀態否則畫面f5刷新就沒了
-                // console.log(Order.orders[header_num]);
-                displayProducts("new"); //編輯到一半付錢就視同放棄修改
-
-                loadOrderPage();
-              });
-              reviseBtn.addEventListener("click", (e) => {
-                //console.log("reviseBtn數字是" + header_num);
-                // 去顯示訂單修改畫面出來
-                // 已經付款的 只能廢棄訂單 (跳出提示)
-                displayProducts("revise", header_num);
-                // 應該要自動往上
-                let header = document.querySelector("header");
-                //console.log("滑動中");
-                header.scrollIntoView({
-                  behavior: "instant",
-                  block: "start",
-                });
-                // document
-                //   .querySelector(`[data-bs-title="${header_num}"]`)
-                //   .click();
-                document
-                  .querySelectorAll("button.yoichi-triplebtn")
-                  .forEach((b) => {
-                    if (b.hasAttribute("aria-describedby")) {
-                      console.log("被點囉");
-
-                      b.click();
-                    }
-                  });
-              });
-              fulfillBtn.addEventListener("click", (e) => {
-                // console.log("fulfillBtn數字是" + header_num);
-                // 去修改對應編號的 order 狀態為 fulfill
-                if (Order.orders[header_num].status == "paid") {
-                  // 已經付錢，直接修改狀態，然後刷新，讓訂單離場
-                  Order.orders[header_num].status = "fulfilled";
-                  // document
-                  //   .querySelector(`[data-bs-title="${header_num}"]`)
-                  //   .click();
-                  document
-                    .querySelectorAll("button.yoichi-triplebtn")
-                    .forEach((b) => {
-                      if (b.hasAttribute("aria-describedby")) {
-                        console.log("被點囉");
-                        b.click();
-                      }
-                    });
-                  Order.historyUpdate(); //保存狀態否則畫面f5刷新就沒了
-                  displayProducts("new");
-                  loadOrderPage();
-                } else {
-                  // 不可以跳過付錢的警告
-                  (function showWarn() {
-                    let body = document.querySelector("body");
-                    let warn = document.createElement("div");
-                    // <div class="successSend alert alert-warning" role="alert">新增成功</div>
-                    warn.innerText = "請先付款";
-                    warn.className = "noSend alert alert-warning";
-                    warn.setAttribute("role", "alert");
-                    body.append(warn);
-                    warn.addEventListener("animationend", (e) => {
-                      e.target.remove();
-                    });
-                    warn.style.animation =
-                      "opacityTransitions 2.1s ease forwards";
-                  })();
-                }
-                document
-                  .querySelectorAll("button.yoichi-triplebtn")
-                  .forEach((b) => {
-                    if (b.hasAttribute("aria-describedby")) {
-                      console.log("被點囉");
-                      b.click();
-                    }
-                  });
-              });
+            if (!popID) return;
+            let pop = document.querySelector(`#${popID}`);
+            if (!pop) return;
+            const headerElement = pop.querySelector(".popover-header");
+            if (!headerElement) return;
+            const header_num = Number(headerElement.innerText);
+            if (!Number.isFinite(header_num) || !Order.orders[header_num]) {
+              closeAllPopovers();
+              return;
             }
+            let body = pop.querySelector(".popover-body");
+            if (!body) return;
+            body.innerHTML = `
+                  <div class="fulfillOrder order-${header_num}"><button>完成</button></div>
+                  <div class="reviseOrder order-${header_num}"><button>修改</button></div>
+                  <div class="paidOrder order-${header_num}"><button>${Order.orders[header_num].status == "paid" ? "取消付款" : "付款"}</button></div>
+            `;
+            let paidBtn = body.querySelector(`.paidOrder.order-${header_num} button`);
+            let reviseBtn = body.querySelector(`.reviseOrder.order-${header_num} button`);
+            let fulfillBtn = body.querySelector(`.fulfillOrder.order-${header_num} button`);
+            if (!paidBtn || !reviseBtn || !fulfillBtn) return;
+
+            paidBtn.addEventListener("click", () => {
+              Order.orders[header_num].status =
+                Order.orders[header_num].status == "paid" ? "pending" : "paid";
+              closeAllPopovers();
+              Order.historyUpdate();
+              displayProducts("new");
+              loadOrderPage();
+            });
+
+            reviseBtn.addEventListener("click", () => {
+              displayProducts("revise", header_num);
+              let header = document.querySelector("header");
+              header.scrollIntoView({ behavior: "instant", block: "start" });
+              closeAllPopovers();
+            });
+
+            fulfillBtn.addEventListener("click", () => {
+              if (Order.orders[header_num].status == "paid") {
+                Order.orders[header_num].status = "fulfilled";
+                closeAllPopovers();
+                Order.historyUpdate();
+                displayProducts("new");
+                loadOrderPage();
+              } else {
+                (function showWarn() {
+                  let body = document.querySelector("body");
+                  let warn = document.createElement("div");
+                  warn.innerText = "請先付款";
+                  warn.className = "noSend alert alert-warning";
+                  warn.setAttribute("role", "alert");
+                  body.append(warn);
+                  warn.addEventListener("animationend", (e) => {
+                    e.target.remove();
+                  });
+                  warn.style.animation = "opacityTransitions 2.1s ease forwards";
+                })();
+                closeAllPopovers();
+              }
+            });
           }
         });
       });
 
       observer.observe(btn, { attributes: true });
+      popoverObservers.push(observer);
     });
   }
   loadOrderPage();
