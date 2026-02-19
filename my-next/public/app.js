@@ -282,6 +282,7 @@ const myWorkScript = (LZString, bootstrap) => {
   const bindOrderNoteTriggers = () => {
     document.querySelectorAll(".yoichi-order-note-trigger").forEach((btn) => {
       btn.addEventListener("click", () => {
+        closeAllPopovers();
         const orderIndex = Number(btn.dataset.orderIndex);
         const productName = decodeURIComponent(btn.dataset.productName || "");
         const qty = Number(btn.dataset.qty) || 1;
@@ -289,6 +290,22 @@ const myWorkScript = (LZString, bootstrap) => {
         openNoteModal(orderIndex, productName, qty);
       });
     });
+  };
+
+  const closeAllPopovers = () => {
+    document.querySelectorAll('[data-bs-toggle="popover"]').forEach((trigger) => {
+      try {
+        const instance = bootstrap.Popover.getInstance(trigger);
+        if (instance) {
+          instance.hide();
+          instance.dispose();
+        }
+      } catch (error) {
+        console.warn("popover dispose 失敗", error);
+      }
+      trigger.removeAttribute("aria-describedby");
+    });
+    document.querySelectorAll(".popover").forEach((el) => el.remove());
   };
 
   const getProductOrderMeta = () => {
@@ -1058,6 +1075,7 @@ const myWorkScript = (LZString, bootstrap) => {
   // ==========下方為訂單區，f5 (reload) 時 ，拉當天資料 ，初始顯示===========
 
   function loadOrderPage() {
+    closeAllPopovers();
     let orderScreen = document.querySelector(".presentation-Area");
     // 清空避免二度呼叫內部已經有東西又追加!
     orderScreen.innerHTML = "";
@@ -1234,14 +1252,7 @@ const myWorkScript = (LZString, bootstrap) => {
                 // 已付款可切回未付款，避免卡死無法追加
                 Order.orders[header_num].status =
                   Order.orders[header_num].status == "paid" ? "pending" : "paid";
-                document
-                  .querySelectorAll("button.yoichi-triplebtn")
-                  .forEach((b) => {
-                    if (b.hasAttribute("aria-describedby")) {
-                      console.log("被點囉");
-                      b.click();
-                    }
-                  });
+                closeAllPopovers();
                 Order.historyUpdate(); //保存狀態否則畫面f5刷新就沒了
                 // console.log(Order.orders[header_num]);
                 displayProducts("new"); //編輯到一半付錢就視同放棄修改
@@ -1263,15 +1274,7 @@ const myWorkScript = (LZString, bootstrap) => {
                 // document
                 //   .querySelector(`[data-bs-title="${header_num}"]`)
                 //   .click();
-                document
-                  .querySelectorAll("button.yoichi-triplebtn")
-                  .forEach((b) => {
-                    if (b.hasAttribute("aria-describedby")) {
-                      console.log("被點囉");
-
-                      b.click();
-                    }
-                  });
+                closeAllPopovers();
               });
               fulfillBtn.addEventListener("click", (e) => {
                 // console.log("fulfillBtn數字是" + header_num);
@@ -1282,14 +1285,7 @@ const myWorkScript = (LZString, bootstrap) => {
                   // document
                   //   .querySelector(`[data-bs-title="${header_num}"]`)
                   //   .click();
-                  document
-                    .querySelectorAll("button.yoichi-triplebtn")
-                    .forEach((b) => {
-                      if (b.hasAttribute("aria-describedby")) {
-                        console.log("被點囉");
-                        b.click();
-                      }
-                    });
+                  closeAllPopovers();
                   Order.historyUpdate(); //保存狀態否則畫面f5刷新就沒了
                   displayProducts("new");
                   loadOrderPage();
@@ -1310,14 +1306,7 @@ const myWorkScript = (LZString, bootstrap) => {
                       "opacityTransitions 2.1s ease forwards";
                   })();
                 }
-                document
-                  .querySelectorAll("button.yoichi-triplebtn")
-                  .forEach((b) => {
-                    if (b.hasAttribute("aria-describedby")) {
-                      console.log("被點囉");
-                      b.click();
-                    }
-                  });
+                closeAllPopovers();
               });
             }
           }

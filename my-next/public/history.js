@@ -15,6 +15,8 @@ const myHistoryScript = (LZString, bootstrap) => {
   };
 
   const normalizeProductName = (value) => String(value || "").trim();
+  const cloneItemNotes = (itemNotes) =>
+    JSON.parse(JSON.stringify(itemNotes || {}));
 
   const setHistoryLocked = (locked) => {
     document.body.classList.toggle("yoichi-history-locked", locked);
@@ -233,7 +235,8 @@ const myHistoryScript = (LZString, bootstrap) => {
       totalPrice,
       orderTime,
       orderDate,
-      status
+      status,
+      itemNotes
     ) {
       // 短路做法  JS 獨有 特性 ，JAVA無。
       this.productsLog = productsLog || Product.products;
@@ -242,6 +245,7 @@ const myHistoryScript = (LZString, bootstrap) => {
       this.orderTime = orderTime || generateTime("time");
       this.orderDate = orderDate || generateTime("date");
       this.status = status || "pending";
+      this.itemNotes = cloneItemNotes(itemNotes);
       // status : pending paid fulfill
       Order.orders.push(this);
       // 生成完畢.........無論 [選取資料] 從何取得都 清空。
@@ -298,6 +302,7 @@ const myHistoryScript = (LZString, bootstrap) => {
           orderTime,
           orderDate,
           status,
+          itemNotes,
         }) => {
           const safeProductsLog = Array.isArray(productsLog)
             ? productsLog.map(
@@ -323,7 +328,8 @@ const myHistoryScript = (LZString, bootstrap) => {
             totalPrice,
             orderTime,
             orderDate,
-            status
+            status,
+            itemNotes
           ); //如果有傳入則用傳入的資訊
         }
       );
@@ -402,8 +408,25 @@ const myHistoryScript = (LZString, bootstrap) => {
       )
       .join("");
 
+  const closeAllPopovers = () => {
+    document.querySelectorAll('[data-bs-toggle="popover"]').forEach((trigger) => {
+      try {
+        const instance = bootstrap.Popover.getInstance(trigger);
+        if (instance) {
+          instance.hide();
+          instance.dispose();
+        }
+      } catch (error) {
+        console.warn("popover dispose 失敗", error);
+      }
+      trigger.removeAttribute("aria-describedby");
+    });
+    document.querySelectorAll(".popover").forEach((el) => el.remove());
+  };
+
   // 會顯示所有狀態的版本
   function loadOrderPage(date) {
+    closeAllPopovers();
     let orderScreen = document.querySelector(".presentation-Area");
     // 清空避免二度呼叫內部已經有東西又追加!
     orderScreen.innerHTML = "";
@@ -563,7 +586,7 @@ const myHistoryScript = (LZString, bootstrap) => {
               body.innerHTML = `
                     <div class="fulfillOrder order-${header_num}"><button>完成</button></div>
                     <div class="reviseOrder order-${header_num}"><button>作廢</button></div>
-                    <div class="paidOrder order-${header_num}"><button>付款</button></div>
+                    <div class="paidOrder order-${header_num}"><button>${Order.orders[header_num].status == "paid" ? "取消付款" : "付款"}</button></div>
               `;
               let paidBtn = document.querySelector(
                 `.paidOrder.order-${header_num} button`
@@ -576,18 +599,13 @@ const myHistoryScript = (LZString, bootstrap) => {
               );
               paidBtn.addEventListener("click", (e) => {
                 //console.log("paidBtn數字是" + header_num);
-                // 去修改對應編號的 order 狀態為 paid
-                Order.orders[header_num].status = "paid";
+                // 付款狀態可切換，fulfilled 也可退回 paid 以回工作區
+                Order.orders[header_num].status =
+                  Order.orders[header_num].status == "paid" ? "pending" : "paid";
                 // document
                 //   .querySelector(`[data-bs-title="${header_num}"]`)
                 //   .click();
-                document
-                  .querySelectorAll("button.yoichi-triplebtn")
-                  .forEach((b) => {
-                    if (b.hasAttribute("aria-describedby")) {
-                      b.click();
-                    }
-                  });
+                closeAllPopovers();
                 Order.historyUpdate(date); //保存狀態否則畫面f5刷新就沒了
                 //console.log(Order.orders[header_num]);
                 //   displayProducts("new"); //編輯到一半付錢就視同放棄修改
@@ -611,13 +629,7 @@ const myHistoryScript = (LZString, bootstrap) => {
                 // document
                 //   .querySelector(`[data-bs-title="${header_num}"]`)
                 //   .click();
-                document
-                  .querySelectorAll("button.yoichi-triplebtn")
-                  .forEach((b) => {
-                    if (b.hasAttribute("aria-describedby")) {
-                      b.click();
-                    }
-                  });
+                closeAllPopovers();
                 Order.historyUpdate(date); //保存狀態否則畫面f5刷新就沒了
                 //console.log(Order.orders[header_num]);
                 //   displayProducts("new"); //編輯到一半付錢就視同放棄修改
@@ -654,13 +666,7 @@ const myHistoryScript = (LZString, bootstrap) => {
                       "opacityTransitions 2.1s ease forwards";
                   })();
                 }
-                document
-                  .querySelectorAll("button.yoichi-triplebtn")
-                  .forEach((b) => {
-                    if (b.hasAttribute("aria-describedby")) {
-                      b.click();
-                    }
-                  });
+                closeAllPopovers();
               });
             }
           }
