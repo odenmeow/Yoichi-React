@@ -44,6 +44,21 @@ const myHistoryScript = (LZString, bootstrap) => {
     );
   };
 
+  const applyNoteUiSettings = () => {
+    const raw = JSON.parse(localStorage.getItem("yoichi-note-ui-settings") || "null") || {};
+    const widthPct = Math.min(100, Math.max(60, Number(raw?.widthPct) || 96));
+    const heightPct = Math.min(96, Math.max(60, Number(raw?.heightPct) || 90));
+    const saveHeight = Math.min(96, Math.max(44, Number(raw?.saveHeight) || 64));
+    const saveMode = raw?.saveMode === "right" ? "right" : "full";
+    document.documentElement.style.setProperty("--yoichi-note-panel-width", `${widthPct}vw`);
+    document.documentElement.style.setProperty("--yoichi-note-panel-height", `${heightPct}vh`);
+    document.documentElement.style.setProperty("--yoichi-note-save-height", `${saveHeight}px`);
+    document.documentElement.classList.toggle(
+      "yoichi-note-save-mode-right",
+      saveMode === "right"
+    );
+  };
+
   const getNoteOptions = () => {
     const saved = JSON.parse(localStorage.getItem("yoichi-note-options") || "null");
     if (!Array.isArray(saved) || saved.length === 0) return NOTE_OPTIONS_DEFAULT;
@@ -1019,6 +1034,7 @@ const myHistoryScript = (LZString, bootstrap) => {
   }
   initHistoryPasswordLock();
   applyCardCellScale();
+  applyNoteUiSettings();
   selectedDate(3);
 };
 export default myHistoryScript;

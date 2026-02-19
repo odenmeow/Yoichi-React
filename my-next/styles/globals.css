@@ -13,6 +13,12 @@
 
 :root {
   --yoichi-card-cell-scale: 1.3;
+  --yoichi-action-menu-width: 224px;
+  --yoichi-action-menu-button-height: 48px;
+  --yoichi-action-menu-badge-scale: 1;
+  --yoichi-note-panel-width: 96vw;
+  --yoichi-note-panel-height: 90vh;
+  --yoichi-note-save-height: 64px;
 }
 
 body main section.cal-Area {
@@ -732,7 +738,7 @@ aside.floating-element a {
   left: 50%;
   transform: translateX(-50%);
   z-index: 40;
-  width: 14rem;
+  width: var(--yoichi-action-menu-width);
   border: 2px solid #111827;
   border-radius: 10px;
   overflow: visible;
@@ -747,9 +753,10 @@ aside.floating-element a {
   transform: translateX(-50%);
   min-width: 3rem;
   text-align: center;
-  font-size: 0.9rem;
+  font-size: calc(0.9rem * var(--yoichi-action-menu-badge-scale));
   line-height: 1;
-  padding: 0.2rem 0.45rem;
+  padding: calc(0.2rem * var(--yoichi-action-menu-badge-scale))
+    calc(0.45rem * var(--yoichi-action-menu-badge-scale));
   border: 2px solid #111827;
   border-radius: 999px;
   background: #f9fafb;
@@ -762,7 +769,7 @@ aside.floating-element a {
 .yoichi-order-action-row button {
   flex: 1;
   border-right: 1px solid #cbd5e1;
-  min-height: 3rem;
+  min-height: var(--yoichi-action-menu-button-height);
 }
 
 .yoichi-order-action-row button:last-child {
@@ -1003,8 +1010,8 @@ aside.floating-element button {
 }
 
 .yoichi-note-modal-panel {
-  width: min(96vw, 1200px);
-  max-height: 90vh;
+  width: min(var(--yoichi-note-panel-width), 1200px);
+  max-height: var(--yoichi-note-panel-height);
   background: #fff;
   border-radius: 12px;
   display: grid;
@@ -1030,9 +1037,20 @@ aside.floating-element button {
 
 .yoichi-note-save {
   width: 100%;
-  min-height: 4rem;
+  min-height: var(--yoichi-note-save-height);
   border-radius: 0;
   font-size: 1.3rem;
+}
+
+:root.yoichi-note-save-mode-right .yoichi-note-modal-footer {
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+}
+
+:root.yoichi-note-save-mode-right .yoichi-note-save {
+  width: auto;
+  min-width: 11rem;
+  border-radius: 8px;
 }
 
 .yoichi-note-modal-title {

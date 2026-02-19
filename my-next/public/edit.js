@@ -680,6 +680,7 @@ const myEditScript = (LZString, bootstrap) => {
     const key = "yoichi-card-cell-scale";
     const scaleBtn = document.querySelector(".yoichi-card-scale-btn");
     if (!scaleBtn) return;
+    scaleBtn.innerText = "卡片格子UI";
 
     const normalizeScale = (value) => {
       const num = Number(value);
@@ -754,6 +755,238 @@ const myEditScript = (LZString, bootstrap) => {
       if (event.target === modal) closeModal();
     });
     scaleBtn.addEventListener("click", openModal);
+  })();
+
+  (function setupActionUiManager() {
+    const key = "yoichi-action-ui-settings";
+    const actionBtn = document.querySelector(".yoichi-action-ui-btn");
+    if (!actionBtn) return;
+
+    const normalizeSettings = (raw) => {
+      const width = Math.min(420, Math.max(180, Number(raw?.width) || 224));
+      const buttonHeight = Math.min(84, Math.max(40, Number(raw?.buttonHeight) || 48));
+      const badgeScale = Math.min(1.6, Math.max(0.6, Number(raw?.badgeScale) || 1));
+      return { width, buttonHeight, badgeScale };
+    };
+
+    const applySettings = (settings) => {
+      const safe = normalizeSettings(settings);
+      document.documentElement.style.setProperty("--yoichi-action-menu-width", `${safe.width}px`);
+      document.documentElement.style.setProperty(
+        "--yoichi-action-menu-button-height",
+        `${safe.buttonHeight}px`
+      );
+      document.documentElement.style.setProperty(
+        "--yoichi-action-menu-badge-scale",
+        String(safe.badgeScale)
+      );
+      return safe;
+    };
+
+    const readSettings = () =>
+      normalizeSettings(safeParseJSON(safeStorageGet(key)) || {});
+
+    const saveSettings = (settings) => {
+      const safe = normalizeSettings(settings);
+      safeStorageSet(key, JSON.stringify(safe));
+      return safe;
+    };
+
+    applySettings(readSettings());
+
+    const modal = document.createElement("section");
+    modal.className = "yoichi-note-modal yoichi-note-modal--settings";
+    modal.style.cssText =
+      "position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:1rem;";
+    modal.innerHTML = `
+      <div class="yoichi-note-modal-panel" style="width:min(92vw,560px)">
+        <div class="yoichi-note-modal-header">
+          <h4 class="yoichi-note-modal-title">按我UI</h4>
+          <button type="button" class="btn btn-outline-secondary yoichi-note-close">關閉</button>
+        </div>
+        <div class="yoichi-note-modal-body" style="display:grid;gap:.8rem;">
+          <label class="form-label" style="margin:0;">框框寬度(px)</label>
+          <input type="range" class="form-range yoichi-action-width-range" min="180" max="420" step="10" />
+          <label class="form-label" style="margin:0;">按鈕高度(px)</label>
+          <input type="range" class="form-range yoichi-action-height-range" min="40" max="84" step="2" />
+          <label class="form-label" style="margin:0;">數字縮放比例</label>
+          <input type="range" class="form-range yoichi-action-badge-range" min="60" max="160" step="5" />
+        </div>
+        <div class="yoichi-note-modal-footer">
+          <button type="button" class="btn btn-primary yoichi-action-ui-save">儲存設定</button>
+        </div>
+      </div>
+    `;
+    document.body.append(modal);
+    modal.style.display = "none";
+
+    const closeBtn = modal.querySelector(".yoichi-note-close");
+    const saveBtn = modal.querySelector(".yoichi-action-ui-save");
+    const widthRange = modal.querySelector(".yoichi-action-width-range");
+    const heightRange = modal.querySelector(".yoichi-action-height-range");
+    const badgeRange = modal.querySelector(".yoichi-action-badge-range");
+
+    const loadToInputs = () => {
+      const s = readSettings();
+      widthRange.value = String(s.width);
+      heightRange.value = String(s.buttonHeight);
+      badgeRange.value = String(Math.round(s.badgeScale * 100));
+      applySettings(s);
+    };
+
+    const previewFromInputs = () => {
+      applySettings({
+        width: Number(widthRange.value),
+        buttonHeight: Number(heightRange.value),
+        badgeScale: Number(badgeRange.value) / 100,
+      });
+    };
+
+    [widthRange, heightRange, badgeRange].forEach((el) =>
+      el.addEventListener("input", previewFromInputs)
+    );
+
+    const openModal = () => {
+      loadToInputs();
+      modal.style.display = "flex";
+    };
+    const closeModal = () => {
+      modal.style.display = "none";
+    };
+    closeBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeModal();
+    });
+    saveBtn.addEventListener("click", () => {
+      const safe = saveSettings({
+        width: Number(widthRange.value),
+        buttonHeight: Number(heightRange.value),
+        badgeScale: Number(badgeRange.value) / 100,
+      });
+      applySettings(safe);
+      closeModal();
+    });
+
+    actionBtn.addEventListener("click", openModal);
+  })();
+
+  (function setupNoteUiManager() {
+    const key = "yoichi-note-ui-settings";
+    const noteUiBtn = document.querySelector(".yoichi-note-ui-btn");
+    if (!noteUiBtn) return;
+
+    const normalizeSettings = (raw) => {
+      const widthPct = Math.min(100, Math.max(60, Number(raw?.widthPct) || 96));
+      const heightPct = Math.min(96, Math.max(60, Number(raw?.heightPct) || 90));
+      const saveHeight = Math.min(96, Math.max(44, Number(raw?.saveHeight) || 64));
+      const saveMode = raw?.saveMode === "right" ? "right" : "full";
+      return { widthPct, heightPct, saveHeight, saveMode };
+    };
+
+    const applySettings = (settings) => {
+      const safe = normalizeSettings(settings);
+      document.documentElement.style.setProperty("--yoichi-note-panel-width", `${safe.widthPct}vw`);
+      document.documentElement.style.setProperty("--yoichi-note-panel-height", `${safe.heightPct}vh`);
+      document.documentElement.style.setProperty("--yoichi-note-save-height", `${safe.saveHeight}px`);
+      document.documentElement.classList.toggle(
+        "yoichi-note-save-mode-right",
+        safe.saveMode === "right"
+      );
+      return safe;
+    };
+
+    const readSettings = () => normalizeSettings(safeParseJSON(safeStorageGet(key)) || {});
+    const saveSettings = (settings) => {
+      const safe = normalizeSettings(settings);
+      safeStorageSet(key, JSON.stringify(safe));
+      return safe;
+    };
+
+    applySettings(readSettings());
+
+    const modal = document.createElement("section");
+    modal.className = "yoichi-note-modal yoichi-note-modal--settings";
+    modal.style.cssText =
+      "position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:1rem;";
+    modal.innerHTML = `
+      <div class="yoichi-note-modal-panel" style="width:min(92vw,560px)">
+        <div class="yoichi-note-modal-header">
+          <h4 class="yoichi-note-modal-title">備註UI</h4>
+          <button type="button" class="btn btn-outline-secondary yoichi-note-close">關閉</button>
+        </div>
+        <div class="yoichi-note-modal-body" style="display:grid;gap:.8rem;">
+          <label class="form-label" style="margin:0;">備註視窗寬度(%)</label>
+          <input type="range" class="form-range yoichi-note-width-range" min="60" max="100" step="2" />
+          <label class="form-label" style="margin:0;">備註視窗高度(%)</label>
+          <input type="range" class="form-range yoichi-note-height-range" min="60" max="96" step="2" />
+          <label class="form-label" style="margin:0;">儲存按鈕高度(px)</label>
+          <input type="range" class="form-range yoichi-note-save-height-range" min="44" max="96" step="2" />
+          <label class="form-label" style="margin:0;">儲存按鈕位置</label>
+          <select class="form-select yoichi-note-save-mode">
+            <option value="full">整條底部</option>
+            <option value="right">右下角按鈕</option>
+          </select>
+        </div>
+        <div class="yoichi-note-modal-footer">
+          <button type="button" class="btn btn-primary yoichi-note-ui-save">儲存設定</button>
+        </div>
+      </div>
+    `;
+    document.body.append(modal);
+    modal.style.display = "none";
+
+    const closeBtn = modal.querySelector(".yoichi-note-close");
+    const saveBtn = modal.querySelector(".yoichi-note-ui-save");
+    const widthRange = modal.querySelector(".yoichi-note-width-range");
+    const heightRange = modal.querySelector(".yoichi-note-height-range");
+    const saveHeightRange = modal.querySelector(".yoichi-note-save-height-range");
+    const saveModeSelect = modal.querySelector(".yoichi-note-save-mode");
+
+    const loadToInputs = () => {
+      const s = readSettings();
+      widthRange.value = String(s.widthPct);
+      heightRange.value = String(s.heightPct);
+      saveHeightRange.value = String(s.saveHeight);
+      saveModeSelect.value = s.saveMode;
+      applySettings(s);
+    };
+
+    const previewFromInputs = () => {
+      applySettings({
+        widthPct: Number(widthRange.value),
+        heightPct: Number(heightRange.value),
+        saveHeight: Number(saveHeightRange.value),
+        saveMode: saveModeSelect.value,
+      });
+    };
+
+    [widthRange, heightRange, saveHeightRange, saveModeSelect].forEach((el) =>
+      el.addEventListener("input", previewFromInputs)
+    );
+
+    const openModal = () => {
+      loadToInputs();
+      modal.style.display = "flex";
+    };
+    const closeModal = () => {
+      modal.style.display = "none";
+    };
+    closeBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeModal();
+    });
+    saveBtn.addEventListener("click", () => {
+      const safe = saveSettings({
+        widthPct: Number(widthRange.value),
+        heightPct: Number(heightRange.value),
+        saveHeight: Number(saveHeightRange.value),
+        saveMode: saveModeSelect.value,
+      });
+      applySettings(safe);
+      closeModal();
+    });
+
+    noteUiBtn.addEventListener("click", openModal);
   })();
 };
 export default myEditScript;

@@ -69,6 +69,37 @@ const myWorkScript = (LZString, bootstrap) => {
     );
   };
 
+  const applyActionUiSettings = () => {
+    const raw = safeParseJSON(safeStorageGet("yoichi-action-ui-settings")) || {};
+    const width = Math.min(420, Math.max(180, Number(raw?.width) || 224));
+    const buttonHeight = Math.min(84, Math.max(40, Number(raw?.buttonHeight) || 48));
+    const badgeScale = Math.min(1.6, Math.max(0.6, Number(raw?.badgeScale) || 1));
+    document.documentElement.style.setProperty("--yoichi-action-menu-width", `${width}px`);
+    document.documentElement.style.setProperty(
+      "--yoichi-action-menu-button-height",
+      `${buttonHeight}px`
+    );
+    document.documentElement.style.setProperty(
+      "--yoichi-action-menu-badge-scale",
+      String(badgeScale)
+    );
+  };
+
+  const applyNoteUiSettings = () => {
+    const raw = safeParseJSON(safeStorageGet("yoichi-note-ui-settings")) || {};
+    const widthPct = Math.min(100, Math.max(60, Number(raw?.widthPct) || 96));
+    const heightPct = Math.min(96, Math.max(60, Number(raw?.heightPct) || 90));
+    const saveHeight = Math.min(96, Math.max(44, Number(raw?.saveHeight) || 64));
+    const saveMode = raw?.saveMode === "right" ? "right" : "full";
+    document.documentElement.style.setProperty("--yoichi-note-panel-width", `${widthPct}vw`);
+    document.documentElement.style.setProperty("--yoichi-note-panel-height", `${heightPct}vh`);
+    document.documentElement.style.setProperty("--yoichi-note-save-height", `${saveHeight}px`);
+    document.documentElement.classList.toggle(
+      "yoichi-note-save-mode-right",
+      saveMode === "right"
+    );
+  };
+
   const getNoteOptions = () => {
     const saved = safeParseJSON(safeStorageGet("yoichi-note-options"));
     if (!Array.isArray(saved) || saved.length === 0) {
@@ -800,6 +831,8 @@ const myWorkScript = (LZString, bootstrap) => {
 
   Order.historyRetrieve();
   applyCardCellScale();
+  applyActionUiSettings();
+  applyNoteUiSettings();
   applyWorkSummaryVisibility();
   console.log(Order.orders);
   // new Order();
