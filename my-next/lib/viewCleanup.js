@@ -32,7 +32,11 @@ export const normalizeAppInteraction = () => {
     const style = window.getComputedStyle(el);
     const fixedLike = style.position === "fixed" || style.position === "absolute";
     const huge = el.offsetWidth >= window.innerWidth * 0.9 && el.offsetHeight >= window.innerHeight * 0.9;
-    const blocker = fixedLike && huge && el.id !== "__next";
+    const blocker =
+      fixedLike &&
+      huge &&
+      el.id !== "__next" &&
+      !el.classList.contains("yoichi-note-modal");
     if (blocker) {
       el.style.pointerEvents = "none";
       el.style.background = "transparent";
