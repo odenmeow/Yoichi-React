@@ -722,6 +722,44 @@ aside.floating-element a {
   box-shadow: 0px 0px 5px 0px #61f477;
 }
 
+.order-buttonMotion {
+  position: relative;
+}
+
+.yoichi-order-action-menu {
+  position: absolute;
+  bottom: calc(100% + 0.45rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  width: 15rem;
+  border: 2px solid #111827;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f3f4f6;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.22);
+}
+
+.yoichi-order-action-header {
+  text-align: center;
+  padding: 0.35rem;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.yoichi-order-action-row {
+  display: flex;
+}
+
+.yoichi-order-action-row button {
+  flex: 1;
+  border-right: 1px solid #cbd5e1;
+  min-height: 3rem;
+}
+
+.yoichi-order-action-row button:last-child {
+  border-right: 0;
+}
+
 @keyframes opacityTransitions {
   0% {
     opacity: 1;

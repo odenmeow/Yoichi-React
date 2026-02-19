@@ -388,6 +388,9 @@ const myWorkScript = (LZString, bootstrap) => {
   };
 
   const closeAllPopovers = () => {
+    document
+      .querySelectorAll(".yoichi-order-action-menu")
+      .forEach((menu) => menu.classList.add("d-none"));
     document.querySelectorAll('[data-bs-toggle="popover"]').forEach((trigger) => {
       try {
         const instance = bootstrap.Popover.getInstance(trigger);
@@ -1242,7 +1245,15 @@ const myWorkScript = (LZString, bootstrap) => {
                 <p>${order.totalPrice}</p>
               </div>
               <div class="order-buttonMotion">
-                <button type="button"  data-bs-custom-class="custom-popover" data-bs-placement="top"  class="yoichi-triplebtn btn btn-lg btn-${btnColor}" data-bs-toggle="popover" data-bs-title="${index}" data-bs-content="生成中...">${btnMsg}</button>
+                <button type="button" class="yoichi-triplebtn btn btn-lg btn-${btnColor}" data-order-index="${index}">${btnMsg}</button>
+                <div class="yoichi-order-action-menu d-none" data-order-index="${index}">
+                  <div class="yoichi-order-action-header">${index}</div>
+                  <div class="yoichi-order-action-row">
+                    <button type="button" class="yoichi-menu-fulfill">完成</button>
+                    <button type="button" class="yoichi-menu-revise">修改</button>
+                    <button type="button" class="yoichi-menu-paid">${order.status == "paid" ? "取消付款" : "付款"}</button>
+                  </div>
+                </div>
 
               </div>
             </div>
@@ -1255,12 +1266,6 @@ const myWorkScript = (LZString, bootstrap) => {
         } else {
           orderScreen.append(yoichi_order_shown);
         }
-        const popoverTriggerList = document.querySelectorAll(
-          '[data-bs-toggle="popover"]'
-        );
-        const popoverList = [...popoverTriggerList].map(
-          (popoverTriggerEl) => new bootstrap.Popover(popoverTriggerEl)
-        );
       });
     })();
     (function create_pendingOrdersSummary() {
@@ -1332,116 +1337,84 @@ const myWorkScript = (LZString, bootstrap) => {
       }
     });
 
-    // 替.popover-body 裡面增加元素，然後flex，放三個按鈕!
-    let btns = orderScreen.querySelectorAll(".yoichi-triplebtn");
-    // console.log(btns);
-    btns.forEach((btn, index) => {
-      let observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (
-            mutation.type === "attributes" &&
-            mutation.attributeName === "aria-describedby"
-          ) {
-            // console.log(
-            //   "aria-describedby 屬性已變化，值為：",
-            //   btn.getAttribute("aria-describedby")
-            // );
-            // 在這裡執行，null變化也會被偵測，所以要過濾
-            let popID = btn.getAttribute("aria-describedby");
-            if (popID) {
-              let pop = document.querySelector(`#${popID}`);
-              if (!pop) return;
+    const bindOrderActionMenus = () => {
+      document.addEventListener("click", (event) => {
+        const trigger = event.target.closest(".yoichi-triplebtn");
+        const actionBtn = event.target.closest(".yoichi-order-action-menu button");
+        if (!trigger && !actionBtn) {
+          closeAllPopovers();
+          return;
+        }
 
-              const headerElement = pop.querySelector(".popover-header");
-              if (!headerElement) return;
-              let header_num = headerElement.innerText;
-              const order = Order.orders[header_num];
-              if (!order) {
-                closeAllPopovers();
-                return;
-              }
-              // console.log("數字" + header.innerText);
-              // 接著依靠數字做出訂單狀態按鈕
-              let body = pop.querySelector(".popover-body");
-              if (!body) return;
-              body.innerHTML = `
-                    <div class="fulfillOrder order-${header_num}"><button>完成</button></div>
-                    <div class="reviseOrder order-${header_num}"><button>修改</button></div>
-                    <div class="paidOrder order-${header_num}"><button>${order.status == "paid" ? "取消付款" : "付款"}</button></div>
-              `;
-              let paidBtn = body.querySelector(`.paidOrder.order-${header_num} button`);
-              let reviseBtn = body.querySelector(`.reviseOrder.order-${header_num} button`);
-              let fulfillBtn = body.querySelector(`.fulfillOrder.order-${header_num} button`);
-              if (!paidBtn || !reviseBtn || !fulfillBtn) return;
-              paidBtn.addEventListener("click", (e) => {
-                // console.log("paidBtn數字是" + header_num);
-                // 已付款可切回未付款，避免卡死無法追加
-                Order.orders[header_num].status =
-                  Order.orders[header_num].status == "paid" ? "pending" : "paid";
-                closeAllPopovers();
-                Order.historyUpdate(); //保存狀態否則畫面f5刷新就沒了
-                // console.log(Order.orders[header_num]);
-                displayProducts("new"); //編輯到一半付錢就視同放棄修改
-
-                loadOrderPage();
-              });
-              reviseBtn.addEventListener("click", (e) => {
-                //console.log("reviseBtn數字是" + header_num);
-                // 去顯示訂單修改畫面出來
-                // 已經付款的 只能廢棄訂單 (跳出提示)
-                displayProducts("revise", header_num);
-                // 應該要自動往上
-                let header = document.querySelector("header");
-                //console.log("滑動中");
-                header.scrollIntoView({
-                  behavior: "instant",
-                  block: "start",
-                });
-                // document
-                //   .querySelector(`[data-bs-title="${header_num}"]`)
-                //   .click();
-                closeAllPopovers();
-              });
-              fulfillBtn.addEventListener("click", (e) => {
-                // console.log("fulfillBtn數字是" + header_num);
-                // 去修改對應編號的 order 狀態為 fulfill
-                if (Order.orders[header_num].status == "paid") {
-                  // 已經付錢，直接修改狀態，然後刷新，讓訂單離場
-                  Order.orders[header_num].status = "fulfilled";
-                  // document
-                  //   .querySelector(`[data-bs-title="${header_num}"]`)
-                  //   .click();
-                  closeAllPopovers();
-                  Order.historyUpdate(); //保存狀態否則畫面f5刷新就沒了
-                  displayProducts("new");
-                  loadOrderPage();
-                } else {
-                  // 不可以跳過付錢的警告
-                  (function showWarn() {
-                    let body = document.querySelector("body");
-                    let warn = document.createElement("div");
-                    // <div class="successSend alert alert-warning" role="alert">新增成功</div>
-                    warn.innerText = "請先付款";
-                    warn.className = "noSend alert alert-warning";
-                    warn.setAttribute("role", "alert");
-                    body.append(warn);
-                    warn.addEventListener("animationend", (e) => {
-                      e.target.remove();
-                    });
-                    warn.style.animation =
-                      "opacityTransitions 2.1s ease forwards";
-                  })();
-                }
-                closeAllPopovers();
-              });
-            }
+        if (trigger) {
+          const orderIndex = Number(trigger.dataset.orderIndex);
+          if (!Number.isFinite(orderIndex) || !Order.orders[orderIndex]) return;
+          const menu = trigger.parentElement.querySelector(".yoichi-order-action-menu");
+          if (!menu) return;
+          const isHidden = menu.classList.contains("d-none");
+          closeAllPopovers();
+          if (isHidden) {
+            menu.classList.remove("d-none");
           }
-        });
-      });
+          return;
+        }
 
-      observer.observe(btn, { attributes: true });
-      popoverObservers.push(observer);
-    });
+        if (!actionBtn) return;
+        const menu = actionBtn.closest(".yoichi-order-action-menu");
+        const orderIndex = Number(menu?.dataset.orderIndex);
+        if (!Number.isFinite(orderIndex) || !Order.orders[orderIndex]) {
+          closeAllPopovers();
+          return;
+        }
+
+        if (actionBtn.classList.contains("yoichi-menu-paid")) {
+          Order.orders[orderIndex].status =
+            Order.orders[orderIndex].status == "paid" ? "pending" : "paid";
+          closeAllPopovers();
+          Order.historyUpdate();
+          displayProducts("new");
+          loadOrderPage();
+          return;
+        }
+
+        if (actionBtn.classList.contains("yoichi-menu-revise")) {
+          displayProducts("revise", orderIndex);
+          let header = document.querySelector("header");
+          header.scrollIntoView({ behavior: "instant", block: "start" });
+          closeAllPopovers();
+          return;
+        }
+
+        if (actionBtn.classList.contains("yoichi-menu-fulfill")) {
+          if (Order.orders[orderIndex].status == "paid") {
+            Order.orders[orderIndex].status = "fulfilled";
+            closeAllPopovers();
+            Order.historyUpdate();
+            displayProducts("new");
+            loadOrderPage();
+          } else {
+            (function showWarn() {
+              let body = document.querySelector("body");
+              let warn = document.createElement("div");
+              warn.innerText = "請先付款";
+              warn.className = "noSend alert alert-warning";
+              warn.setAttribute("role", "alert");
+              body.append(warn);
+              warn.addEventListener("animationend", (e) => {
+                e.target.remove();
+              });
+              warn.style.animation = "opacityTransitions 2.1s ease forwards";
+            })();
+            closeAllPopovers();
+          }
+        }
+      });
+    };
+
+    if (!window.__yoichiOrderActionMenusBound) {
+      bindOrderActionMenus();
+      window.__yoichiOrderActionMenusBound = true;
+    }
   }
   loadOrderPage();
 };
