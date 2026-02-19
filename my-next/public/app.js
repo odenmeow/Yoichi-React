@@ -42,23 +42,41 @@ const myWorkScript = (LZString, bootstrap) => {
 
   const normalizeProductName = (value) => String(value || "").trim();
 
-  const NOTE_OPTIONS = [
-    { key: "normal", label: "普" },
-    { key: "noSesame", label: "不芝麻" },
-    { key: "noPepper", label: "不胡椒" },
-    { key: "sesameMore", label: "芝麻多" },
-    { key: "sesameLess", label: "芝麻少" },
-    { key: "pepperMore", label: "胡椒多" },
-    { key: "pepperLess", label: "胡椒少" },
-    { key: "veryMild", label: "微微辣" },
-    { key: "mild", label: "微辣" },
-    { key: "small", label: "小辣" },
-    { key: "medium", label: "中辣" },
-    { key: "large", label: "大辣" },
+  const NOTE_OPTIONS_DEFAULT = [
+    { id: "normal", label: "普", color: "#111827" },
+    { id: "noSesame", label: "不芝麻", color: "#111827" },
+    { id: "noPepper", label: "不胡椒", color: "#111827" },
+    { id: "sesameMore", label: "芝麻多", color: "#111827" },
+    { id: "sesameLess", label: "芝麻少", color: "#111827" },
+    { id: "pepperMore", label: "胡椒多", color: "#111827" },
+    { id: "pepperLess", label: "胡椒少", color: "#111827" },
+    { id: "veryMild", label: "微微辣", color: "#111827" },
+    { id: "mild", label: "微辣", color: "#111827" },
+    { id: "small", label: "小辣", color: "#111827" },
+    { id: "medium", label: "中辣", color: "#111827" },
+    { id: "large", label: "大辣", color: "#111827" },
   ];
 
-  const hasAnyNoteSelected = (row = {}) =>
-    NOTE_OPTIONS.some((option) => option.key !== "normal" && row[option.key]);
+  const getNoteOptions = () => {
+    const saved = safeParseJSON(safeStorageGet("yoichi-note-options"));
+    if (!Array.isArray(saved) || saved.length === 0) {
+      return NOTE_OPTIONS_DEFAULT;
+    }
+    return saved
+      .map((option, index) => {
+        const label = String(option?.label || "").trim();
+        if (!label) return null;
+        return {
+          id: String(option?.id || `custom-${index}`).trim() || `custom-${index}`,
+          label,
+          color: normalizeTextColor(option?.color || "#111827"),
+        };
+      })
+      .filter(Boolean);
+  };
+
+  const hasAnyNoteSelected = (row = {}, noteOptions = getNoteOptions()) =>
+    noteOptions.some((option) => option.id !== "normal" && row[option.id]);
 
   const ensureOrderNotes = (order) => {
     if (!order || typeof order !== "object") return {};
@@ -74,23 +92,34 @@ const myWorkScript = (LZString, bootstrap) => {
     return Array.isArray(itemNotes[key]) ? itemNotes[key] : [];
   };
 
-  const hasOrderProductNotes = (order, productName) =>
-    getOrderProductNotes(order, productName).some((row) => hasAnyNoteSelected(row));
+  const hasOrderProductNotes = (order, productName, noteOptions) =>
+    getOrderProductNotes(order, productName).some((row) =>
+      hasAnyNoteSelected(row, noteOptions)
+    );
 
-  const cloneItemNotes = (itemNotes) =>
-    JSON.parse(JSON.stringify(itemNotes || {}));
+  const cloneItemNotes = (itemNotes) => JSON.parse(JSON.stringify(itemNotes || {}));
 
   const createDefaultNoteRows = (qty) =>
     Array.from({ length: qty }, () => ({ normal: true }));
 
   let noteModalState = null;
 
-  const getAlphabetLabel = (index) => String.fromCharCode(97 + index);
+  const getAlphabetLabel = (index) => {
+    let n = Number(index) || 0;
+    let out = "";
+    do {
+      out = String.fromCharCode(97 + (n % 26)) + out;
+      n = Math.floor(n / 26) - 1;
+    } while (n >= 0);
+    return out;
+  };
 
   const getNoteModal = () => {
     if (noteModalState) return noteModalState;
     const modal = document.createElement("section");
     modal.className = "yoichi-note-modal d-none";
+    modal.style.cssText =
+      "position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:1rem;";
     modal.innerHTML = `
       <div class="yoichi-note-modal-panel">
         <div class="yoichi-note-modal-header">
@@ -100,7 +129,7 @@ const myWorkScript = (LZString, bootstrap) => {
         <div class="yoichi-note-modal-body">
           <div class="yoichi-note-grid-wrap">
             <table class="yoichi-note-grid-table">
-              <thead><tr><th>品項</th>${NOTE_OPTIONS.map((o)=>`<th>${o.label}</th>`).join("")}</tr></thead>
+              <thead><tr><th>品項</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -111,9 +140,11 @@ const myWorkScript = (LZString, bootstrap) => {
       </div>
     `;
     document.body.append(modal);
+    modal.style.display = "none";
     const closeBtn = modal.querySelector(".yoichi-note-close");
     const saveBtn = modal.querySelector(".yoichi-note-save");
     const tbody = modal.querySelector("tbody");
+    const theadRow = modal.querySelector("thead tr");
     const title = modal.querySelector(".yoichi-note-modal-title");
 
     const dragState = { active: false, targetValue: false };
@@ -126,15 +157,24 @@ const myWorkScript = (LZString, bootstrap) => {
 
     const syncNormalByRow = (tr) => {
       const normalCell = tr.querySelector('[data-note-key="normal"]');
-      const hasSpecial = [...tr.querySelectorAll(".yoichi-note-cell-btn")].some((btn) =>
-        btn.dataset.noteKey !== "normal" && btn.dataset.selected === "1"
+      const hasSpecial = [...tr.querySelectorAll(".yoichi-note-cell-btn")].some(
+        (btn) => btn.dataset.noteKey !== "normal" && btn.dataset.selected === "1"
       );
       setCellValue(normalCell, !hasSpecial);
     };
 
     const applyCell = (btn, value) => {
-      if (!btn || btn.dataset.noteKey === "normal") return;
+      if (!btn) return;
       setCellValue(btn, value);
+      if (btn.dataset.noteKey === "normal" && value) {
+        btn
+          .closest("tr")
+          .querySelectorAll(".yoichi-note-cell-btn")
+          .forEach((other) => {
+            if (other.dataset.noteKey !== "normal") setCellValue(other, false);
+          });
+        return;
+      }
       syncNormalByRow(btn.closest("tr"));
     };
 
@@ -142,9 +182,9 @@ const myWorkScript = (LZString, bootstrap) => {
 
     tbody.addEventListener("pointerdown", (event) => {
       const btn = getCellFromEvent(event.target);
-      if (!btn || btn.dataset.noteKey === "normal") return;
+      if (!btn) return;
       event.preventDefault();
-      dragState.active = true;
+      dragState.active = btn.dataset.noteKey !== "normal";
       dragState.targetValue = btn.dataset.selected !== "1";
       applyCell(btn, dragState.targetValue);
     });
@@ -156,11 +196,20 @@ const myWorkScript = (LZString, bootstrap) => {
       applyCell(btn, dragState.targetValue);
     });
 
+    tbody.addEventListener("click", (event) => {
+      const btn = getCellFromEvent(event.target);
+      if (!btn) return;
+      applyCell(btn, btn.dataset.selected !== "1");
+    });
+
     document.addEventListener("pointerup", () => {
       dragState.active = false;
     });
 
-    const closeModal = () => modal.classList.add("d-none");
+    const closeModal = () => {
+      modal.classList.add("d-none");
+      modal.style.display = "none";
+    };
 
     closeBtn.addEventListener("click", closeModal);
     modal.addEventListener("click", (event) => {
@@ -172,6 +221,7 @@ const myWorkScript = (LZString, bootstrap) => {
       const { orderIndex, productName } = noteModalState.context;
       const order = Order.orders[orderIndex];
       if (!order) return;
+      const noteOptions = getNoteOptions();
       const rows = [...tbody.querySelectorAll("tr")].map((tr) => {
         const row = {};
         tr.querySelectorAll(".yoichi-note-cell-btn").forEach((btn) => {
@@ -181,7 +231,7 @@ const myWorkScript = (LZString, bootstrap) => {
       });
       const notes = ensureOrderNotes(order);
       const key = normalizeProductName(productName);
-      if (rows.some((row) => hasAnyNoteSelected(row))) {
+      if (rows.some((row) => hasAnyNoteSelected(row, noteOptions))) {
         notes[key] = rows;
       } else {
         delete notes[key];
@@ -191,7 +241,7 @@ const myWorkScript = (LZString, bootstrap) => {
       closeModal();
     });
 
-    noteModalState = { modal, tbody, title, context: null };
+    noteModalState = { modal, tbody, theadRow, title, context: null };
     return noteModalState;
   };
 
@@ -199,19 +249,37 @@ const myWorkScript = (LZString, bootstrap) => {
     const modalState = getNoteModal();
     const order = Order.orders[orderIndex];
     if (!order) return;
+    const noteOptions = getNoteOptions();
     const notes = getOrderProductNotes(order, productName);
     const amount = Math.max(1, Number(qty) || 0);
     const rows = notes.length === amount ? notes : createDefaultNoteRows(amount);
 
     modalState.title.innerText = `${productName} 備註（${amount}份）`;
+    modalState.theadRow.innerHTML = `<th>品項</th>${noteOptions
+      .map(
+        (option) =>
+          `<th style="color:${normalizeTextColor(option.color)}">${option.label}</th>`
+      )
+      .join("")}`;
     modalState.tbody.innerHTML = rows
       .map((row, index) => {
         const rowName = `${productName}${getAlphabetLabel(index)}`;
-        return `<tr><td>${rowName}</td>${NOTE_OPTIONS.map((option) => `<td><button type="button" class="yoichi-note-cell-btn ${row[option.key] ? "is-selected" : ""}" data-selected="${row[option.key] ? "1" : "0"}" data-note-key="${option.key}"></button></td>`).join("")}</tr>`;
+        return `<tr><td>${rowName}</td>${noteOptions
+          .map((option) => {
+            const selected = !!row[option.id];
+            return `<td><button type="button" class="yoichi-note-cell-btn ${
+              selected ? "is-selected" : ""
+            }" data-selected="${selected ? "1" : "0"}" data-note-key="${
+              option.id
+            }"></button></td>`;
+          })
+          .join("")}</tr>`;
       })
       .join("");
     modalState.context = { orderIndex, productName };
     modalState.modal.classList.remove("d-none");
+      modal.style.display = "flex";
+    modalState.modal.style.display = "flex";
   };
 
   const bindOrderNoteTriggers = () => {
@@ -225,7 +293,6 @@ const myWorkScript = (LZString, bootstrap) => {
       });
     });
   };
-
 
   const getProductOrderMeta = () => {
     const productIndexMap = new Map();
@@ -254,21 +321,25 @@ const myWorkScript = (LZString, bootstrap) => {
       return ai - bi;
     });
 
-  const buildOrderDetailsHtml = (details = [], productColorMap, orderIndex, order) =>
-    details
+  const buildOrderDetailsHtml = (details = [], productColorMap, orderIndex, order) => {
+    const noteOptions = getNoteOptions();
+    return details
       .map((pick) => {
         const productName = normalizeProductName(pick.pickedName);
-        const hasNote = hasOrderProductNotes(order, productName);
+        const hasNote = hasOrderProductNotes(order, productName, noteOptions);
         const qty = Number(pick.pickedNumber) || 0;
         return ` <div class="order-detail">
-        <div class="order-p-name ${hasNote ? "yoichi-has-note" : ""}"><p class="yoichi-order-note-trigger" data-order-index="${orderIndex}" data-product-name="${encodeURIComponent(
+        <div class="order-p-name yoichi-order-note-trigger ${
+          hasNote ? "yoichi-has-note" : ""
+        }" data-order-index="${orderIndex}" data-product-name="${encodeURIComponent(
           productName
-        )}" data-qty="${qty}" style="color:${
+        )}" data-qty="${qty}"><p style="color:${
           productColorMap.get(productName) || "inherit"
         }">${pick.pickedName}</p></div>
                 <div class="order-p-number"><p>${pick.pickedNumber}</p></div> </div> `;
       })
       .join("");
+  };
 
   const readWorkSettings = () => {
     if (isWorkSummaryDisabled) {
@@ -884,6 +955,7 @@ const myWorkScript = (LZString, bootstrap) => {
               behavior: "smooth",
               block: "start",
             });
+            targetElement.scrollTo({ left: 0, behavior: "smooth" });
           }, 100);
         })();
         loadOrderPage();
@@ -1115,6 +1187,12 @@ const myWorkScript = (LZString, bootstrap) => {
     })();
 
     bindOrderNoteTriggers();
+
+    requestAnimationFrame(() => {
+      if (orderScreen && typeof orderScreen.scrollTo === "function") {
+        orderScreen.scrollTo({ left: 0, behavior: "smooth" });
+      }
+    });
 
     // 替.popover-body 裡面增加元素，然後flex，放三個按鈕!
     let btns = orderScreen.querySelectorAll(".yoichi-triplebtn");

@@ -910,6 +910,10 @@ aside.floating-element button {
   user-select: none;
 }
 
+.yoichi-order-note-trigger p {
+  pointer-events: none;
+}
+
 .order-p-name.yoichi-has-note {
   background: #fef3c7;
 }
@@ -917,12 +921,13 @@ aside.floating-element button {
 .yoichi-note-modal {
   position: fixed;
   inset: 0;
-  z-index: 4000;
+  z-index: 5000;
   background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  pointer-events: auto;
 }
 
 .yoichi-note-modal-panel {

@@ -484,47 +484,188 @@ const myEditScript = (LZString, bootstrap) => {
     });
   })();
 
-  (function setupWorkSummaryToggle() {
-    const workSettingsKey = "yoichi-work-settings";
-    const summaryToggleBtn = document.querySelector(
-      ".yoichi-summary-toggle-btn"
-    );
+  (function setupFlavorSettingsManager() {
+    const flavorKey = "yoichi-note-options";
+    const summaryToggleBtn = document.querySelector(".yoichi-summary-toggle-btn");
     if (!summaryToggleBtn) return;
 
-    const normalizeSettings = (settings) => {
-      if (settings == null || typeof settings !== "object") {
-        return { showSummary: true };
+    const defaultOptions = [
+      { id: "normal", label: "普", color: "#111827" },
+      { id: "noSesame", label: "不芝麻", color: "#111827" },
+      { id: "noPepper", label: "不胡椒", color: "#111827" },
+      { id: "sesameMore", label: "芝麻多", color: "#111827" },
+      { id: "sesameLess", label: "芝麻少", color: "#111827" },
+      { id: "pepperMore", label: "胡椒多", color: "#111827" },
+      { id: "pepperLess", label: "胡椒少", color: "#111827" },
+      { id: "veryMild", label: "微微辣", color: "#111827" },
+      { id: "mild", label: "微辣", color: "#111827" },
+      { id: "small", label: "小辣", color: "#111827" },
+      { id: "medium", label: "中辣", color: "#111827" },
+      { id: "large", label: "大辣", color: "#111827" },
+    ];
+
+    const normalizeOptions = (raw) => {
+      if (!Array.isArray(raw) || raw.length === 0) {
+        return defaultOptions;
       }
-      return {
-        showSummary: settings.showSummary !== false,
-      };
+      const normalized = raw
+        .map((item, index) => {
+          const label = String(item?.label || "").trim();
+          if (!label) return null;
+          return {
+            id: String(item?.id || `custom-${index}`).trim() || `custom-${index}`,
+            label,
+            color: normalizeTextColor(item?.color || "#111827"),
+          };
+        })
+        .filter(Boolean);
+      return normalized.length ? normalized : defaultOptions;
     };
 
-    const readSettings = () => {
-      const savedSettings = safeParseJSON(safeStorageGet(workSettingsKey));
-      return normalizeSettings(savedSettings);
-    };
+    const readOptions = () =>
+      normalizeOptions(safeParseJSON(safeStorageGet(flavorKey)));
 
-    const writeSettings = (settings) => {
-      const normalized = normalizeSettings(settings);
-      safeStorageSet(workSettingsKey, JSON.stringify(normalized));
+    const writeOptions = (options) => {
+      const normalized = normalizeOptions(options);
+      safeStorageSet(flavorKey, JSON.stringify(normalized));
       return normalized;
     };
 
-    const renderToggleBtn = (showSummary) => {
-      summaryToggleBtn.innerText = showSummary
-        ? "工作區隱藏下方總計"
-        : "工作區顯示下方總計";
-      summaryToggleBtn.classList.toggle("btn-outline-success", showSummary);
-      summaryToggleBtn.classList.toggle("btn-outline-warning", !showSummary);
+    summaryToggleBtn.innerText = "口味個人化設定";
+    summaryToggleBtn.classList.remove("btn-outline-success", "btn-outline-warning");
+    summaryToggleBtn.classList.add("btn-outline-primary");
+
+    const modal = document.createElement("section");
+    modal.className = "yoichi-note-modal d-none";
+    modal.style.cssText =
+      "position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:1rem;";
+    modal.innerHTML = `
+      <div class="yoichi-note-modal-panel">
+        <div class="yoichi-note-modal-header">
+          <h4 class="yoichi-note-modal-title">口味個人化設定</h4>
+          <button type="button" class="btn btn-outline-secondary yoichi-note-close">關閉</button>
+        </div>
+        <div class="yoichi-note-modal-body">
+          <div class="yoichi-note-grid-wrap">
+            <table class="yoichi-note-grid-table">
+              <thead><tr><th>#</th><th>名稱</th><th>顏色</th><th>操作</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div style="margin-top:.6rem;display:flex;gap:.5rem;">
+            <button type="button" class="btn btn-outline-primary yoichi-flavor-add">新增口味</button>
+            <button type="button" class="btn btn-outline-secondary yoichi-flavor-reset">重置預設</button>
+          </div>
+        </div>
+        <div class="yoichi-note-modal-footer">
+          <button type="button" class="btn btn-primary yoichi-flavor-save">儲存設定</button>
+        </div>
+      </div>
+    `;
+    document.body.append(modal);
+    modal.style.display = "none";
+
+    const tbody = modal.querySelector("tbody");
+    const closeBtn = modal.querySelector(".yoichi-note-close");
+    const addBtn = modal.querySelector(".yoichi-flavor-add");
+    const resetBtn = modal.querySelector(".yoichi-flavor-reset");
+    const saveBtn = modal.querySelector(".yoichi-flavor-save");
+    let editingOptions = [];
+
+    const renderRows = () => {
+      tbody.innerHTML = editingOptions
+        .map(
+          (option, index) => `
+            <tr data-index="${index}">
+              <td>${index + 1}</td>
+              <td><input type="text" class="form-control yoichi-flavor-label" value="${option.label}" /></td>
+              <td><input type="color" class="form-control form-control-color yoichi-flavor-color" value="${normalizeTextColor(option.color)}" /></td>
+              <td style="display:flex;gap:.4rem;justify-content:center;">
+                <button type="button" class="btn btn-sm btn-outline-secondary yoichi-flavor-up">上移</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary yoichi-flavor-down">下移</button>
+                <button type="button" class="btn btn-sm btn-outline-danger yoichi-flavor-remove">刪除</button>
+              </td>
+            </tr>`
+        )
+        .join("");
     };
 
-    let settings = writeSettings(readSettings());
-    renderToggleBtn(settings.showSummary);
+    const openModal = () => {
+      editingOptions = readOptions().map((item) => ({ ...item }));
+      renderRows();
+      modal.classList.remove("d-none");
+      modal.style.display = "flex";
+    };
 
-    summaryToggleBtn.addEventListener("click", () => {
-      settings = writeSettings({ showSummary: !settings.showSummary });
-      renderToggleBtn(settings.showSummary);
+    const closeModal = () => {
+      modal.classList.add("d-none");
+      modal.style.display = "none";
+    };
+
+    summaryToggleBtn.addEventListener("click", openModal);
+    closeBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeModal();
+    });
+
+    addBtn.addEventListener("click", () => {
+      editingOptions.push({
+        id: `custom-${Date.now()}-${editingOptions.length}`,
+        label: `口味${editingOptions.length + 1}`,
+        color: "#111827",
+      });
+      renderRows();
+    });
+
+    resetBtn.addEventListener("click", () => {
+      editingOptions = defaultOptions.map((item) => ({ ...item }));
+      renderRows();
+    });
+
+    tbody.addEventListener("input", (event) => {
+      const tr = event.target.closest("tr[data-index]");
+      if (!tr) return;
+      const index = Number(tr.dataset.index);
+      if (!editingOptions[index]) return;
+      if (event.target.classList.contains("yoichi-flavor-label")) {
+        editingOptions[index].label = String(event.target.value || "");
+      }
+      if (event.target.classList.contains("yoichi-flavor-color")) {
+        editingOptions[index].color = normalizeTextColor(event.target.value);
+      }
+    });
+
+    tbody.addEventListener("click", (event) => {
+      const tr = event.target.closest("tr[data-index]");
+      if (!tr) return;
+      const index = Number(tr.dataset.index);
+      if (!editingOptions[index]) return;
+      if (event.target.classList.contains("yoichi-flavor-up") && index > 0) {
+        [editingOptions[index - 1], editingOptions[index]] = [
+          editingOptions[index],
+          editingOptions[index - 1],
+        ];
+        renderRows();
+      }
+      if (
+        event.target.classList.contains("yoichi-flavor-down") &&
+        index < editingOptions.length - 1
+      ) {
+        [editingOptions[index + 1], editingOptions[index]] = [
+          editingOptions[index],
+          editingOptions[index + 1],
+        ];
+        renderRows();
+      }
+      if (event.target.classList.contains("yoichi-flavor-remove")) {
+        editingOptions.splice(index, 1);
+        renderRows();
+      }
+    });
+
+    saveBtn.addEventListener("click", () => {
+      editingOptions = writeOptions(editingOptions);
+      closeModal();
     });
   })();
 };
