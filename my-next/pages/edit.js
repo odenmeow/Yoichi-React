@@ -240,7 +240,7 @@ export default function Edit() {
               className="btn btn-outline-success yoichi-summary-toggle-btn"
               data-feature="work-summary"
             >
-              工作區隱藏下方總計
+              口味個人化設定
             </button>
           </div>
           <div className="yoichi-p-shows">
