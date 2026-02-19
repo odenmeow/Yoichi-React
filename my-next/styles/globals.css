@@ -996,3 +996,32 @@ aside.floating-element button {
 .yoichi-note-cell-btn.is-selected {
   background: #111827;
 }
+
+
+.order-time.yoichi-order-global-note-trigger {
+  cursor: pointer;
+}
+
+.order-time.yoichi-has-global-note {
+  background: #dcfce7 !important;
+}
+
+.order-p-name.yoichi-has-global-note {
+  background: #dcfce7;
+}
+
+.yoichi-note-modal,
+.yoichi-note-modal * {
+  touch-action: manipulation;
+}
+
+.yoichi-note-modal .yoichi-note-modal-body,
+.yoichi-note-modal .yoichi-note-grid-wrap,
+.yoichi-note-modal .yoichi-note-grid-table,
+.yoichi-note-modal .yoichi-note-cell-btn {
+  touch-action: none;
+}
+
+.yoichi-note-modal .yoichi-note-modal-body {
+  overscroll-behavior: contain;
+}

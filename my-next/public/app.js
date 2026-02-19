@@ -92,6 +92,19 @@ const myWorkScript = (LZString, bootstrap) => {
     return Array.isArray(itemNotes[key]) ? itemNotes[key] : [];
   };
 
+  const ensureOrderGlobalNotes = (order) => {
+    if (!order || typeof order !== "object") return {};
+    if (!order.globalNotes || typeof order.globalNotes !== "object") {
+      order.globalNotes = {};
+    }
+    return order.globalNotes;
+  };
+
+  const hasGlobalNotes = (order, noteOptions = getNoteOptions()) =>
+    hasAnyNoteSelected(ensureOrderGlobalNotes(order), noteOptions);
+
+  const getMergedRowWithGlobal = (row = {}, global = {}) => ({ ...global, ...row });
+
   const hasOrderProductNotes = (order, productName, noteOptions) =>
     getOrderProductNotes(order, productName).some((row) =>
       hasAnyNoteSelected(row, noteOptions)
@@ -184,14 +197,18 @@ const myWorkScript = (LZString, bootstrap) => {
       const btn = getCellFromEvent(event.target);
       if (!btn) return;
       event.preventDefault();
+      if (event.target.setPointerCapture) {
+        try { event.target.setPointerCapture(event.pointerId); } catch (error) {}
+      }
       dragState.active = btn.dataset.noteKey !== "normal";
       dragState.targetValue = btn.dataset.selected !== "1";
       applyCell(btn, dragState.targetValue);
     });
 
-    tbody.addEventListener("pointerover", (event) => {
+    tbody.addEventListener("pointermove", (event) => {
       if (!dragState.active) return;
-      const btn = getCellFromEvent(event.target);
+      const elem = document.elementFromPoint(event.clientX, event.clientY);
+      const btn = getCellFromEvent(elem || event.target);
       if (!btn || btn.dataset.noteKey === "normal") return;
       applyCell(btn, dragState.targetValue);
     });
@@ -217,7 +234,7 @@ const myWorkScript = (LZString, bootstrap) => {
 
     saveBtn.addEventListener("click", () => {
       if (!noteModalState?.context) return;
-      const { orderIndex, productName } = noteModalState.context;
+      const { orderIndex, productName, mode } = noteModalState.context;
       const order = Order.orders[orderIndex];
       if (!order) return;
       const noteOptions = getNoteOptions();
@@ -228,12 +245,20 @@ const myWorkScript = (LZString, bootstrap) => {
         });
         return row;
       });
-      const notes = ensureOrderNotes(order);
-      const key = normalizeProductName(productName);
-      if (rows.some((row) => hasAnyNoteSelected(row, noteOptions))) {
-        notes[key] = rows;
+      if (mode === "global") {
+        const globalNotes = ensureOrderGlobalNotes(order);
+        Object.keys(globalNotes).forEach((key) => delete globalNotes[key]);
+        if (rows[0]) {
+          Object.assign(globalNotes, rows[0]);
+        }
       } else {
-        delete notes[key];
+        const notes = ensureOrderNotes(order);
+        const key = normalizeProductName(productName);
+        if (rows.some((row) => hasAnyNoteSelected(row, noteOptions))) {
+          notes[key] = rows;
+        } else {
+          delete notes[key];
+        }
       }
       Order.historyUpdate();
       loadOrderPage();
@@ -244,16 +269,29 @@ const myWorkScript = (LZString, bootstrap) => {
     return noteModalState;
   };
 
-  const openNoteModal = (orderIndex, productName, qty) => {
+  const openNoteModal = (orderIndex, productName, qty, mode = "product") => {
     const modalState = getNoteModal();
     const order = Order.orders[orderIndex];
     if (!order) return;
     const noteOptions = getNoteOptions();
+    const globalNotes = ensureOrderGlobalNotes(order);
     const notes = getOrderProductNotes(order, productName);
     const amount = Math.max(1, Number(qty) || 0);
-    const rows = notes.length === amount ? notes : createDefaultNoteRows(amount);
+    const rows =
+      mode === "global"
+        ? [globalNotes]
+        : notes.length === amount
+        ? notes
+        : createDefaultNoteRows(amount).map(() =>
+            hasAnyNoteSelected(globalNotes, noteOptions)
+              ? getMergedRowWithGlobal({}, globalNotes)
+              : { normal: true }
+          );
 
-    modalState.title.innerText = `${productName} 備註（${amount}份）`;
+    modalState.title.innerText =
+      mode === "global"
+        ? `訂單 ${orderIndex} 全域備註`
+        : `${productName} 備註（${amount}份）`;
     modalState.theadRow.innerHTML = `<th>品項</th>${noteOptions
       .map(
         (option) =>
@@ -262,7 +300,7 @@ const myWorkScript = (LZString, bootstrap) => {
       .join("")}`;
     modalState.tbody.innerHTML = rows
       .map((row, index) => {
-        const rowName = `${productName}${getAlphabetLabel(index)}`;
+        const rowName = mode === "global" ? "全域" : `${productName}${getAlphabetLabel(index)}`;
         return `<tr><td>${rowName}</td>${noteOptions
           .map((option) => {
             const selected = !!row[option.id];
@@ -275,7 +313,7 @@ const myWorkScript = (LZString, bootstrap) => {
           .join("")}</tr>`;
       })
       .join("");
-    modalState.context = { orderIndex, productName };
+    modalState.context = { orderIndex, productName, mode };
     modalState.modal.style.display = "flex";
   };
 
@@ -287,7 +325,15 @@ const myWorkScript = (LZString, bootstrap) => {
         const productName = decodeURIComponent(btn.dataset.productName || "");
         const qty = Number(btn.dataset.qty) || 1;
         if (!Number.isFinite(orderIndex) || !productName) return;
-        openNoteModal(orderIndex, productName, qty);
+        openNoteModal(orderIndex, productName, qty, "product");
+      });
+    });
+    document.querySelectorAll(".yoichi-order-global-note-trigger").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        closeAllPopovers();
+        const orderIndex = Number(btn.dataset.orderIndex);
+        if (!Number.isFinite(orderIndex)) return;
+        openNoteModal(orderIndex, "全域設定", 1, "global");
       });
     });
   };
@@ -337,15 +383,19 @@ const myWorkScript = (LZString, bootstrap) => {
 
   const buildOrderDetailsHtml = (details = [], productColorMap, orderIndex, order) => {
     const noteOptions = getNoteOptions();
+    const globalApplied = hasGlobalNotes(order, noteOptions);
     return details
       .map((pick) => {
         const productName = normalizeProductName(pick.pickedName);
         const hasNote = hasOrderProductNotes(order, productName, noteOptions);
+        const cellClass = hasNote
+          ? "yoichi-has-note"
+          : globalApplied
+          ? "yoichi-has-global-note"
+          : "";
         const qty = Number(pick.pickedNumber) || 0;
         return ` <div class="order-detail">
-        <div class="order-p-name yoichi-order-note-trigger ${
-          hasNote ? "yoichi-has-note" : ""
-        }" data-order-index="${orderIndex}" data-product-name="${encodeURIComponent(
+        <div class="order-p-name yoichi-order-note-trigger ${cellClass}" data-order-index="${orderIndex}" data-product-name="${encodeURIComponent(
           productName
         )}" data-qty="${qty}"><p style="color:${
           productColorMap.get(productName) || "inherit"
@@ -532,7 +582,8 @@ const myWorkScript = (LZString, bootstrap) => {
       orderTime,
       orderDate,
       status,
-      itemNotes
+      itemNotes,
+      globalNotes
     ) {
       // 短路做法  JS 獨有 特性 ，JAVA無。
       this.productsLog = productsLog || Product.products;
@@ -542,6 +593,7 @@ const myWorkScript = (LZString, bootstrap) => {
       this.orderDate = orderDate || generateTime("date");
       this.status = status || "pending";
       this.itemNotes = cloneItemNotes(itemNotes);
+      this.globalNotes = cloneItemNotes(globalNotes);
       // status : pending paid fulfill
       Order.orders.push(this);
       // 生成完畢.........無論 [選取資料] 從何取得都 清空。
@@ -601,6 +653,7 @@ const myWorkScript = (LZString, bootstrap) => {
           orderDate,
           status,
           itemNotes,
+          globalNotes,
         }) => {
           const safeProductsLog = Array.isArray(productsLog)
             ? productsLog.map(
@@ -626,7 +679,8 @@ const myWorkScript = (LZString, bootstrap) => {
             orderTime,
             orderDate,
             status,
-            itemNotes
+            itemNotes,
+            globalNotes
           ); //如果有傳入則用傳入的資訊
         }
       );
@@ -1119,7 +1173,7 @@ const myWorkScript = (LZString, bootstrap) => {
    
           <div class="yoichi-card">
             <div class="yoichi-card-time-number">
-              <div class="order-time"><p>${order.orderTime}</p></div>
+              <div class="order-time yoichi-order-global-note-trigger ${hasGlobalNotes(order, getNoteOptions()) ? "yoichi-has-global-note" : ""}" data-order-index="${index}"><p>${order.orderTime}</p></div>
               <div class="order-number "><p class="with-notation">${index}</p></div>
             </div>
             <div class="yoichi-card-order-detail">

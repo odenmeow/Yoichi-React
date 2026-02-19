@@ -18,6 +18,151 @@ const myHistoryScript = (LZString, bootstrap) => {
   const cloneItemNotes = (itemNotes) =>
     JSON.parse(JSON.stringify(itemNotes || {}));
 
+  const NOTE_OPTIONS_DEFAULT = [
+    { id: "normal", label: "普", color: "#111827" },
+    { id: "noSesame", label: "不芝麻", color: "#111827" },
+    { id: "noPepper", label: "不胡椒", color: "#111827" },
+    { id: "sesameMore", label: "芝麻多", color: "#111827" },
+    { id: "sesameLess", label: "芝麻少", color: "#111827" },
+    { id: "pepperMore", label: "胡椒多", color: "#111827" },
+    { id: "pepperLess", label: "胡椒少", color: "#111827" },
+    { id: "veryMild", label: "微微辣", color: "#111827" },
+    { id: "mild", label: "微辣", color: "#111827" },
+    { id: "small", label: "小辣", color: "#111827" },
+    { id: "medium", label: "中辣", color: "#111827" },
+    { id: "large", label: "大辣", color: "#111827" },
+  ];
+
+  const getNoteOptions = () => {
+    const saved = JSON.parse(localStorage.getItem("yoichi-note-options") || "null");
+    if (!Array.isArray(saved) || saved.length === 0) return NOTE_OPTIONS_DEFAULT;
+    return saved
+      .map((option, index) => {
+        const label = String(option?.label || "").trim();
+        if (!label) return null;
+        return {
+          id: String(option?.id || `custom-${index}`).trim() || `custom-${index}`,
+          label,
+          color: normalizeTextColor(option?.color || "#111827"),
+        };
+      })
+      .filter(Boolean);
+  };
+
+  const hasAnyNoteSelected = (row = {}, noteOptions = getNoteOptions()) =>
+    noteOptions.some((option) => option.id !== "normal" && row[option.id]);
+
+  const ensureOrderNotes = (order) => {
+    if (!order || typeof order !== "object") return {};
+    if (!order.itemNotes || typeof order.itemNotes !== "object") {
+      order.itemNotes = {};
+    }
+    return order.itemNotes;
+  };
+
+  const ensureOrderGlobalNotes = (order) => {
+    if (!order || typeof order !== "object") return {};
+    if (!order.globalNotes || typeof order.globalNotes !== "object") {
+      order.globalNotes = {};
+    }
+    return order.globalNotes;
+  };
+
+  const getOrderProductNotes = (order, productName) => {
+    const itemNotes = ensureOrderNotes(order);
+    const key = normalizeProductName(productName);
+    return Array.isArray(itemNotes[key]) ? itemNotes[key] : [];
+  };
+
+  const hasOrderProductNotes = (order, productName, noteOptions) =>
+    getOrderProductNotes(order, productName).some((row) =>
+      hasAnyNoteSelected(row, noteOptions)
+    );
+
+  const hasGlobalNotes = (order, noteOptions = getNoteOptions()) =>
+    hasAnyNoteSelected(ensureOrderGlobalNotes(order), noteOptions);
+
+  const getMergedRowWithGlobal = (row = {}, global = {}) => ({ ...global, ...row });
+
+  const getAlphabetLabel = (index) => {
+    let n = Number(index) || 0;
+    let out = "";
+    do {
+      out = String.fromCharCode(97 + (n % 26)) + out;
+      n = Math.floor(n / 26) - 1;
+    } while (n >= 0);
+    return out;
+  };
+
+  let historyNoteModalState = null;
+
+  const getHistoryNoteModal = () => {
+    if (historyNoteModalState) return historyNoteModalState;
+    const modal = document.createElement("section");
+    modal.className = "yoichi-note-modal";
+    modal.style.cssText =
+      "position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:1rem;";
+    modal.innerHTML = `
+      <div class="yoichi-note-modal-panel">
+        <div class="yoichi-note-modal-header">
+          <h4 class="yoichi-note-modal-title"></h4>
+          <button type="button" class="btn btn-outline-secondary yoichi-note-close">關閉</button>
+        </div>
+        <div class="yoichi-note-modal-body">
+          <div class="yoichi-note-grid-wrap">
+            <table class="yoichi-note-grid-table"><thead><tr><th>品項</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+      </div>`;
+    document.body.append(modal);
+    modal.style.display = "none";
+    const title = modal.querySelector('.yoichi-note-modal-title');
+    const theadRow = modal.querySelector('thead tr');
+    const tbody = modal.querySelector('tbody');
+    modal.querySelector('.yoichi-note-close').addEventListener('click',()=>{modal.style.display='none';});
+    modal.addEventListener('click',(e)=>{ if(e.target===modal) modal.style.display='none';});
+    historyNoteModalState = { modal, title, theadRow, tbody };
+    return historyNoteModalState;
+  };
+
+  const openHistoryNoteModal = (orderIndex, productName, qty, mode='product') => {
+    const order = Order.orders[orderIndex];
+    if (!order) return;
+    const modalState = getHistoryNoteModal();
+    const noteOptions = getNoteOptions();
+    const globalNotes = ensureOrderGlobalNotes(order);
+    const notes = getOrderProductNotes(order, productName);
+    const amount = Math.max(1, Number(qty) || 0);
+    const rows = mode === 'global' ? [globalNotes] : notes.length === amount ? notes : Array.from({length: amount}, ()=>getMergedRowWithGlobal({}, globalNotes));
+
+    modalState.title.innerText = mode === 'global' ? `訂單 ${orderIndex} 全域口味` : `${productName} 歷史口味（${amount}份）`;
+    modalState.theadRow.innerHTML = `<th>品項</th>${noteOptions.map((o)=>`<th style="color:${normalizeTextColor(o.color)}">${o.label}</th>`).join('')}`;
+    modalState.tbody.innerHTML = rows.map((row,index)=>{
+      const rowName = mode === 'global' ? '全域' : `${productName}${getAlphabetLabel(index)}`;
+      return `<tr><td>${rowName}</td>${noteOptions.map((o)=>`<td><button type="button" class="yoichi-note-cell-btn ${row[o.id] ? 'is-selected':''}" data-selected="${row[o.id] ? '1':'0'}"></button></td>`).join('')}</tr>`;
+    }).join('');
+    modalState.modal.style.display = 'flex';
+  };
+
+  const bindHistoryNoteTriggers = () => {
+    document.querySelectorAll('.yoichi-order-note-trigger').forEach((btn)=>{
+      btn.addEventListener('click',()=>{
+        const orderIndex = Number(btn.dataset.orderIndex);
+        const productName = decodeURIComponent(btn.dataset.productName || '');
+        const qty = Number(btn.dataset.qty) || 1;
+        if (!Number.isFinite(orderIndex) || !productName) return;
+        openHistoryNoteModal(orderIndex, productName, qty, 'product');
+      });
+    });
+    document.querySelectorAll('.yoichi-order-global-note-trigger').forEach((btn)=>{
+      btn.addEventListener('click',()=>{
+        const orderIndex = Number(btn.dataset.orderIndex);
+        if (!Number.isFinite(orderIndex)) return;
+        openHistoryNoteModal(orderIndex, '全域設定', 1, 'global');
+      });
+    });
+  };
+
   const setHistoryLocked = (locked) => {
     document.body.classList.toggle("yoichi-history-locked", locked);
     if (!lockOverlay) {
@@ -236,7 +381,8 @@ const myHistoryScript = (LZString, bootstrap) => {
       orderTime,
       orderDate,
       status,
-      itemNotes
+      itemNotes,
+      globalNotes
     ) {
       // 短路做法  JS 獨有 特性 ，JAVA無。
       this.productsLog = productsLog || Product.products;
@@ -246,6 +392,7 @@ const myHistoryScript = (LZString, bootstrap) => {
       this.orderDate = orderDate || generateTime("date");
       this.status = status || "pending";
       this.itemNotes = cloneItemNotes(itemNotes);
+      this.globalNotes = cloneItemNotes(globalNotes);
       // status : pending paid fulfill
       Order.orders.push(this);
       // 生成完畢.........無論 [選取資料] 從何取得都 清空。
@@ -303,6 +450,7 @@ const myHistoryScript = (LZString, bootstrap) => {
           orderDate,
           status,
           itemNotes,
+          globalNotes,
         }) => {
           const safeProductsLog = Array.isArray(productsLog)
             ? productsLog.map(
@@ -329,7 +477,8 @@ const myHistoryScript = (LZString, bootstrap) => {
             orderTime,
             orderDate,
             status,
-            itemNotes
+            itemNotes,
+            globalNotes
           ); //如果有傳入則用傳入的資訊
         }
       );
@@ -397,16 +546,28 @@ const myHistoryScript = (LZString, bootstrap) => {
       return ai - bi;
     });
 
-  const buildOrderDetailsHtml = (details = [], productColorMap) =>
-    details
-      .map(
-        (pick) => ` <div class="order-detail">
-        <div class="order-p-name"><p style="color:${
+  const buildOrderDetailsHtml = (details = [], productColorMap, orderIndex, order) => {
+    const noteOptions = getNoteOptions();
+    const globalApplied = hasGlobalNotes(order, noteOptions);
+    return details
+      .map((pick) => {
+        const productName = normalizeProductName(pick.pickedName);
+        const hasNote = hasOrderProductNotes(order, productName, noteOptions);
+        const cellClass = hasNote
+          ? "yoichi-has-note"
+          : globalApplied
+          ? "yoichi-has-global-note"
+          : "";
+        return ` <div class="order-detail">
+        <div class="order-p-name yoichi-order-note-trigger ${cellClass}" data-order-index="${orderIndex}" data-product-name="${encodeURIComponent(
+          productName
+        )}" data-qty="${Number(pick.pickedNumber) || 0}"><p style="color:${
           productColorMap.get(normalizeProductName(pick.pickedName)) || "inherit"
         }">${pick.pickedName}</p></div>
-                <div class="order-p-number"><p>${pick.pickedNumber}</p></div> </div> `
-      )
+                <div class="order-p-number"><p>${pick.pickedNumber}</p></div> </div> `;
+      })
       .join("");
+  };
 
   const closeAllPopovers = () => {
     document.querySelectorAll('[data-bs-toggle="popover"]').forEach((trigger) => {
@@ -439,7 +600,7 @@ const myHistoryScript = (LZString, bootstrap) => {
           order.details,
           productIndexMap
         );
-        const products = buildOrderDetailsHtml(sortedDetails, productColorMap);
+        const products = buildOrderDetailsHtml(sortedDetails, productColorMap, index, order);
         let yoichi_order_shown = document.createElement("section");
         yoichi_order_shown.classList = "yoichi-order-shown";
         let btnMsg = "按我";
@@ -480,7 +641,7 @@ const myHistoryScript = (LZString, bootstrap) => {
    
           <div class="yoichi-card">
             <div class="yoichi-card-time-number">
-              <div class="order-time"><p>${order.orderTime}</p></div>
+              <div class="order-time yoichi-order-global-note-trigger ${hasGlobalNotes(order, getNoteOptions()) ? "yoichi-has-global-note" : ""}" data-order-index="${index}"><p>${order.orderTime}</p></div>
               <div class="order-number "><p class="with-notation">${index}</p></div>
             </div>
             <div class="yoichi-card-order-detail">
@@ -558,6 +719,8 @@ const myHistoryScript = (LZString, bootstrap) => {
         orderScreen.append(yoichi_order_shown);
       }
     })();
+
+    bindHistoryNoteTriggers();
 
     // 替.popover-body 裡面增加元素，然後flex，放三個按鈕!
     let btns = orderScreen.querySelectorAll(".yoichi-triplebtn");
