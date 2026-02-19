@@ -1010,18 +1010,24 @@ aside.floating-element button {
   background: #dcfce7;
 }
 
-.yoichi-note-modal,
-.yoichi-note-modal * {
+.yoichi-note-modal.yoichi-note-modal--picker,
+.yoichi-note-modal.yoichi-note-modal--picker * {
   touch-action: manipulation;
 }
 
-.yoichi-note-modal .yoichi-note-modal-body,
-.yoichi-note-modal .yoichi-note-grid-wrap,
-.yoichi-note-modal .yoichi-note-grid-table,
-.yoichi-note-modal .yoichi-note-cell-btn {
+.yoichi-note-modal.yoichi-note-modal--picker .yoichi-note-modal-body,
+.yoichi-note-modal.yoichi-note-modal--picker .yoichi-note-grid-wrap,
+.yoichi-note-modal.yoichi-note-modal--picker .yoichi-note-grid-table,
+.yoichi-note-modal.yoichi-note-modal--picker .yoichi-note-cell-btn {
   touch-action: none;
 }
 
-.yoichi-note-modal .yoichi-note-modal-body {
+.yoichi-note-modal.yoichi-note-modal--picker .yoichi-note-modal-body {
   overscroll-behavior: contain;
+}
+
+.yoichi-note-modal.yoichi-note-modal--settings .yoichi-note-modal-body {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: auto;
 }

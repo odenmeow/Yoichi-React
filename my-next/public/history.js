@@ -26,11 +26,11 @@ const myHistoryScript = (LZString, bootstrap) => {
     { id: "sesameLess", label: "芝麻少", color: "#111827" },
     { id: "pepperMore", label: "胡椒多", color: "#111827" },
     { id: "pepperLess", label: "胡椒少", color: "#111827" },
-    { id: "veryMild", label: "微微辣", color: "#111827" },
-    { id: "mild", label: "微辣", color: "#111827" },
-    { id: "small", label: "小辣", color: "#111827" },
-    { id: "medium", label: "中辣", color: "#111827" },
-    { id: "large", label: "大辣", color: "#111827" },
+    { id: "veryMild", label: "微微辣", color: "#111827", group: "spice" },
+    { id: "mild", label: "微辣", color: "#111827", group: "spice" },
+    { id: "small", label: "小辣", color: "#111827", group: "spice" },
+    { id: "medium", label: "中辣", color: "#111827", group: "spice" },
+    { id: "large", label: "大辣", color: "#111827", group: "spice" },
   ];
 
   const getNoteOptions = () => {
@@ -44,6 +44,10 @@ const myHistoryScript = (LZString, bootstrap) => {
           id: String(option?.id || `custom-${index}`).trim() || `custom-${index}`,
           label,
           color: normalizeTextColor(option?.color || "#111827"),
+          group:
+            typeof option?.group === "string" && option.group.trim()
+              ? option.group.trim()
+              : "",
         };
       })
       .filter(Boolean);
@@ -99,7 +103,7 @@ const myHistoryScript = (LZString, bootstrap) => {
   const getHistoryNoteModal = () => {
     if (historyNoteModalState) return historyNoteModalState;
     const modal = document.createElement("section");
-    modal.className = "yoichi-note-modal";
+    modal.className = "yoichi-note-modal yoichi-note-modal--picker";
     modal.style.cssText =
       "position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:1rem;";
     modal.innerHTML = `
@@ -305,15 +309,15 @@ const myHistoryScript = (LZString, bootstrap) => {
     }
     static generateDefault() {
       Product.products = [];
-      new Product("一串心", 20, 0, 0);
-      new Product("雞腿串", 65, 0, 0);
-      new Product("豬肉串", 45, 0, 0);
-      new Product("香腸", 45, 0, 0);
-      new Product("蔥肉串", 45, 0, 0);
-      new Product("雞骨輪", 60, 2, 20);
-      new Product("雞屁股", 50, 0, 0);
-      new Product("雞心", 50, 0, 0);
-      new Product("米腸", 40, 0, 0);
+      new Product("香腸", 45, 0, 0, "#ff0000");
+      new Product("蔥肉串", 45, 0, 0, "#00a803");
+      new Product("豬肉串", 45, 0, 0, "#fd3030");
+      new Product("一串心", 20, 0, 0, "#ff0000");
+      new Product("雞腿串", 65, 0, 0, "#2e58ff");
+      new Product("七里香", 50, 0, 0, "#3859ff");
+      new Product("雞心", 50, 0, 0, "#4542ff");
+      new Product("雞骨輪", 60, 2, 20, "#325afb");
+      new Product("米腸", 40, 0, 0, "#ff9061");
       Product.historyUpdate();
     }
   }
