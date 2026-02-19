@@ -13,6 +13,16 @@
 
 :root {
   --yoichi-card-cell-scale: 1.3;
+  --yoichi-action-menu-scale: 1;
+  --yoichi-action-menu-height-scale: 1;
+  --yoichi-action-header-ratio: 45%;
+  --yoichi-action-row-ratio: 55%;
+  --yoichi-action-btn1-ratio: 33%;
+  --yoichi-action-btn2-ratio: 34%;
+  --yoichi-action-btn3-ratio: 33%;
+  --yoichi-note-save-align: flex-end;
+  --yoichi-note-save-width: 100%;
+  --yoichi-note-save-height: 100%;
 }
 
 body main section.cal-Area {
@@ -372,11 +382,25 @@ body main section.presentation-Area .yoichi-order-shown.yoichi-order-summary-sti
   z-index: 3;
   background: #f8fafc;
 }
+
+body main section.presentation-Area .yoichi-order-shown.yoichi-order-summary-sticky .yoichi-card-bottom {
+  min-height: 6rem;
+  position: sticky;
+  bottom: 0;
+  background: #f8fafc;
+  z-index: 2;
+}
 body main section.presentation-Area .yoichi-order-shown div.yoichi-card {
   border: 2px green solid;
   width: 100%;
   display: flex;
   flex-direction: column;
+}
+
+.yoichi-summary-total-count {
+  font-weight: 700;
+  font-size: 1.25rem;
+  white-space: nowrap;
 }
 body
   main
@@ -732,28 +756,47 @@ aside.floating-element a {
   left: 50%;
   transform: translateX(-50%);
   z-index: 40;
-  width: 15rem;
+  width: calc(15rem * var(--yoichi-action-menu-scale));
+  height: calc(6rem * var(--yoichi-action-menu-height-scale));
   border: 2px solid #111827;
   border-radius: 10px;
   overflow: hidden;
   background: #f3f4f6;
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.22);
+  display: flex;
+  flex-direction: column;
 }
 
 .yoichi-order-action-header {
   text-align: center;
   padding: 0.35rem;
   border-bottom: 1px solid #cbd5e1;
+  flex: 0 0 var(--yoichi-action-header-ratio);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .yoichi-order-action-row {
   display: flex;
+  flex: 0 0 var(--yoichi-action-row-ratio);
 }
 
 .yoichi-order-action-row button {
-  flex: 1;
   border-right: 1px solid #cbd5e1;
-  min-height: 3rem;
+  min-height: 2.6rem;
+}
+
+.yoichi-order-action-row button:nth-child(1) {
+  flex-basis: var(--yoichi-action-btn1-ratio);
+}
+
+.yoichi-order-action-row button:nth-child(2) {
+  flex-basis: var(--yoichi-action-btn2-ratio);
+}
+
+.yoichi-order-action-row button:nth-child(3) {
+  flex-basis: var(--yoichi-action-btn3-ratio);
 }
 
 .yoichi-order-action-row button:last-child {
@@ -1015,7 +1058,12 @@ aside.floating-element button {
 .yoichi-note-modal-footer {
   border-bottom: 0;
   border-top: 1px solid #e5e7eb;
-  justify-content: flex-end;
+  justify-content: var(--yoichi-note-save-align);
+}
+
+.yoichi-note-modal-footer .yoichi-note-save {
+  width: var(--yoichi-note-save-width);
+  min-height: calc(2.35rem * var(--yoichi-note-save-height) / 100);
 }
 
 .yoichi-note-modal-title {

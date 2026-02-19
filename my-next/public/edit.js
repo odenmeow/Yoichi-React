@@ -676,25 +676,115 @@ const myEditScript = (LZString, bootstrap) => {
     });
   })();
 
-  (function setupCardScaleManager() {
-    const key = "yoichi-card-cell-scale";
-    const scaleBtn = document.querySelector(".yoichi-card-scale-btn");
-    if (!scaleBtn) return;
+  (function setupActionUiManager() {
+    const key = "yoichi-action-ui-config";
+    const actionBtn = document.querySelector(".yoichi-action-ui-btn");
+    if (!actionBtn) return;
 
-    const normalizeScale = (value) => {
-      const num = Number(value);
-      if (!Number.isFinite(num)) return 1.3;
-      return Math.min(2, Math.max(1, Number(num.toFixed(2))));
+    const normalizeConfig = (raw) => {
+      const data = raw && typeof raw === "object" ? raw : {};
+      return {
+        popupScale: Math.min(300, Math.max(50, Number(data.popupScale) || 100)),
+        popupHeightScale: Math.min(300, Math.max(50, Number(data.popupHeightScale) || 100)),
+        headerWeight: Math.min(300, Math.max(50, Number(data.headerWeight) || 100)),
+        firstButton: Math.min(300, Math.max(50, Number(data.firstButton) || 100)),
+        secondButton: Math.min(300, Math.max(50, Number(data.secondButton) || 100)),
+        thirdButton: Math.min(300, Math.max(50, Number(data.thirdButton) || 100)),
+      };
     };
 
-    const applyScale = (value) => {
-      const scale = normalizeScale(value);
-      document.documentElement.style.setProperty("--yoichi-card-cell-scale", String(scale));
-      return scale;
+    const modal = document.createElement("section");
+    modal.className = "yoichi-note-modal yoichi-note-modal--settings";
+    modal.style.cssText =
+      "position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:1rem;";
+    modal.innerHTML = `
+      <div class="yoichi-note-modal-panel" style="width:min(92vw,620px)">
+        <div class="yoichi-note-modal-header">
+          <h4 class="yoichi-note-modal-title">按我UI 調整</h4>
+          <button type="button" class="btn btn-outline-secondary yoichi-note-close">關閉</button>
+        </div>
+        <div class="yoichi-note-modal-body" style="display:grid;gap:.85rem;">
+          <label class="form-label mb-0">彈出窗寬度（50% ~ 300%）</label>
+          <input type="range" class="form-range yoichi-action-popup-scale" min="50" max="300" step="1" />
+          <label class="form-label mb-0">彈出窗高度（50% ~ 300%）</label>
+          <input type="range" class="form-range yoichi-action-popup-height-scale" min="50" max="300" step="1" />
+          <label class="form-label mb-0">上方數字區權重（50% ~ 300%）</label>
+          <input type="range" class="form-range yoichi-action-header-height" min="50" max="300" step="1" />
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;">
+            <div><label class="form-label mb-0">完成按鈕權重（50% ~ 300%）</label><input type="range" class="form-range yoichi-action-btn1" min="50" max="300" step="1" /></div>
+            <div><label class="form-label mb-0">修改按鈕權重（50% ~ 300%）</label><input type="range" class="form-range yoichi-action-btn2" min="50" max="300" step="1" /></div>
+            <div><label class="form-label mb-0">付款按鈕權重（50% ~ 300%）</label><input type="range" class="form-range yoichi-action-btn3" min="50" max="300" step="1" /></div>
+          </div>
+          <small class="text-muted">全部改成 bar，預設 100%，三顆按鈕會依權重自動換算占比。</small>
+        </div>
+        <div class="yoichi-note-modal-footer">
+          <button type="button" class="btn btn-primary yoichi-action-ui-save">儲存設定</button>
+        </div>
+      </div>
+    `;
+    document.body.append(modal);
+    modal.style.display = "none";
+
+    const closeBtn = modal.querySelector(".yoichi-note-close");
+    const saveBtn = modal.querySelector(".yoichi-action-ui-save");
+    const popupScaleInput = modal.querySelector(".yoichi-action-popup-scale");
+    const popupHeightScaleInput = modal.querySelector(".yoichi-action-popup-height-scale");
+    const headerHeightInput = modal.querySelector(".yoichi-action-header-height");
+    const btn1Input = modal.querySelector(".yoichi-action-btn1");
+    const btn2Input = modal.querySelector(".yoichi-action-btn2");
+    const btn3Input = modal.querySelector(".yoichi-action-btn3");
+
+    const openModal = () => {
+      const config = normalizeConfig(safeParseJSON(safeStorageGet(key)));
+      popupScaleInput.value = String(config.popupScale);
+      popupHeightScaleInput.value = String(config.popupHeightScale);
+      headerHeightInput.value = String(config.headerWeight);
+      btn1Input.value = String(config.firstButton);
+      btn2Input.value = String(config.secondButton);
+      btn3Input.value = String(config.thirdButton);
+      modal.style.display = "flex";
     };
 
-    const savedScale = normalizeScale(safeStorageGet(key));
-    applyScale(savedScale);
+    const closeModal = () => {
+      modal.style.display = "none";
+    };
+
+    saveBtn.addEventListener("click", () => {
+      const config = normalizeConfig({
+        popupScale: popupScaleInput.value,
+        popupHeightScale: popupHeightScaleInput.value,
+        headerWeight: headerHeightInput.value,
+        firstButton: btn1Input.value,
+        secondButton: btn2Input.value,
+        thirdButton: btn3Input.value,
+      });
+      safeStorageSet(key, JSON.stringify(config));
+      closeModal();
+    });
+
+    closeBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeModal();
+    });
+    actionBtn.addEventListener("click", openModal);
+  })();
+
+  (function setupNoteUiManager() {
+    const key = "yoichi-note-save-ui-config";
+    const noteBtn = document.querySelector(".yoichi-note-ui-btn");
+    if (!noteBtn) return;
+
+    const normalizeConfig = (raw) => {
+      const data = raw && typeof raw === "object" ? raw : {};
+      const align = ["left", "center", "right", "stretch"].includes(data.align)
+        ? data.align
+        : "right";
+      return {
+        width: Math.min(300, Math.max(50, Number(data.width) || 100)),
+        height: Math.min(300, Math.max(50, Number(data.height) || 100)),
+        align,
+      };
+    };
 
     const modal = document.createElement("section");
     modal.className = "yoichi-note-modal yoichi-note-modal--settings";
@@ -703,37 +793,41 @@ const myEditScript = (LZString, bootstrap) => {
     modal.innerHTML = `
       <div class="yoichi-note-modal-panel" style="width:min(92vw,560px)">
         <div class="yoichi-note-modal-header">
-          <h4 class="yoichi-note-modal-title">卡片格子調整</h4>
+          <h4 class="yoichi-note-modal-title">客製化UI（備註儲存鍵）</h4>
           <button type="button" class="btn btn-outline-secondary yoichi-note-close">關閉</button>
         </div>
-        <div class="yoichi-note-modal-body" style="display:grid;gap:.8rem;">
-          <label class="form-label" style="margin:0;">放大倍率（100% ~ 200%）</label>
-          <input type="range" class="form-range yoichi-card-scale-range" min="100" max="200" step="5" />
-          <input type="number" class="form-control yoichi-card-scale-number" min="100" max="200" step="5" />
+        <div class="yoichi-note-modal-body" style="display:grid;gap:.85rem;">
+          <label class="form-label mb-0">儲存按鈕寬度（50% ~ 300%）</label>
+          <input type="range" class="form-range yoichi-note-save-width" min="50" max="300" step="1" />
+          <label class="form-label mb-0">儲存按鈕高度（50% ~ 300%）</label>
+          <input type="range" class="form-range yoichi-note-save-height" min="50" max="300" step="1" />
+          <label class="form-label mb-0">按鈕位置</label>
+          <select class="form-select yoichi-note-save-align">
+            <option value="left">靠左</option>
+            <option value="center">置中</option>
+            <option value="right">靠右</option>
+            <option value="stretch">滿版長條</option>
+          </select>
         </div>
         <div class="yoichi-note-modal-footer">
-          <button type="button" class="btn btn-primary yoichi-card-scale-save">儲存設定</button>
+          <button type="button" class="btn btn-primary yoichi-note-ui-save">儲存設定</button>
         </div>
       </div>
     `;
     document.body.append(modal);
     modal.style.display = "none";
 
-    const rangeInput = modal.querySelector(".yoichi-card-scale-range");
-    const numberInput = modal.querySelector(".yoichi-card-scale-number");
     const closeBtn = modal.querySelector(".yoichi-note-close");
-    const saveBtn = modal.querySelector(".yoichi-card-scale-save");
-
-    const syncInputs = (percent) => {
-      const pct = Math.min(200, Math.max(100, Number(percent) || 130));
-      rangeInput.value = String(pct);
-      numberInput.value = String(pct);
-      applyScale(pct / 100);
-    };
+    const saveBtn = modal.querySelector(".yoichi-note-ui-save");
+    const widthInput = modal.querySelector(".yoichi-note-save-width");
+    const heightInput = modal.querySelector(".yoichi-note-save-height");
+    const alignInput = modal.querySelector(".yoichi-note-save-align");
 
     const openModal = () => {
-      const scale = normalizeScale(safeStorageGet(key));
-      syncInputs(Math.round(scale * 100));
+      const config = normalizeConfig(safeParseJSON(safeStorageGet(key)));
+      widthInput.value = String(config.width);
+      heightInput.value = String(config.height);
+      alignInput.value = config.align;
       modal.style.display = "flex";
     };
 
@@ -741,19 +835,21 @@ const myEditScript = (LZString, bootstrap) => {
       modal.style.display = "none";
     };
 
-    rangeInput.addEventListener("input", () => syncInputs(rangeInput.value));
-    numberInput.addEventListener("input", () => syncInputs(numberInput.value));
     saveBtn.addEventListener("click", () => {
-      const scale = normalizeScale((Number(numberInput.value) || 130) / 100);
-      safeStorageSet(key, String(scale));
-      applyScale(scale);
+      const config = normalizeConfig({
+        width: widthInput.value,
+        height: heightInput.value,
+        align: alignInput.value,
+      });
+      safeStorageSet(key, JSON.stringify(config));
       closeModal();
     });
+
     closeBtn.addEventListener("click", closeModal);
     modal.addEventListener("click", (event) => {
       if (event.target === modal) closeModal();
     });
-    scaleBtn.addEventListener("click", openModal);
+    noteBtn.addEventListener("click", openModal);
   })();
 };
 export default myEditScript;

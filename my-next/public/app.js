@@ -3,7 +3,7 @@ const myWorkScript = (LZString, bootstrap) => {
     return;
   }
   window.__yoichiWorkScriptInitialized = true;
-  const isWorkSummaryDisabled = true;
+  const isWorkSummaryDisabled = false;
 
   const safeStorageGet = (key) => {
     try {
@@ -67,6 +67,51 @@ const myWorkScript = (LZString, bootstrap) => {
       "--yoichi-card-cell-scale",
       String(scale)
     );
+  };
+
+  const applyActionUiConfig = () => {
+    const saved = safeParseJSON(safeStorageGet("yoichi-action-ui-config")) || {};
+    const popupScale = Math.min(300, Math.max(50, Number(saved.popupScale) || 100));
+    const popupHeightScale = Math.min(300, Math.max(50, Number(saved.popupHeightScale) || 100));
+    const headerWeight = Math.min(300, Math.max(50, Number(saved.headerWeight) || 100));
+    const firstButton = Math.min(300, Math.max(50, Number(saved.firstButton) || 100));
+    const secondButton = Math.min(300, Math.max(50, Number(saved.secondButton) || 100));
+    const thirdButton = Math.min(300, Math.max(50, Number(saved.thirdButton) || 100));
+    const totalButtons = firstButton + secondButton + thirdButton;
+    const ratioA = ((firstButton / totalButtons) * 100).toFixed(2);
+    const ratioB = ((secondButton / totalButtons) * 100).toFixed(2);
+    const ratioC = (100 - Number(ratioA) - Number(ratioB)).toFixed(2);
+
+    document.documentElement.style.setProperty("--yoichi-action-menu-scale", String(popupScale / 100));
+    document.documentElement.style.setProperty("--yoichi-action-menu-height-scale", String(popupHeightScale / 100));
+    const headerRatio = ((headerWeight / (headerWeight + 100)) * 100).toFixed(2);
+    document.documentElement.style.setProperty("--yoichi-action-header-ratio", `${headerRatio}%`);
+    document.documentElement.style.setProperty("--yoichi-action-row-ratio", `${100 - Number(headerRatio)}%`);
+    document.documentElement.style.setProperty("--yoichi-action-btn1-ratio", `${ratioA}%`);
+    document.documentElement.style.setProperty("--yoichi-action-btn2-ratio", `${ratioB}%`);
+    document.documentElement.style.setProperty("--yoichi-action-btn3-ratio", `${ratioC}%`);
+  };
+
+  const applyNoteSaveUiConfig = () => {
+    const saved = safeParseJSON(safeStorageGet("yoichi-note-save-ui-config")) || {};
+    const width = Math.min(300, Math.max(50, Number(saved.width) || 100));
+    const height = Math.min(300, Math.max(50, Number(saved.height) || 100));
+    const align = ["left", "center", "right", "stretch"].includes(saved.align)
+      ? saved.align
+      : "right";
+
+    const alignMap = {
+      left: "flex-start",
+      center: "center",
+      right: "flex-end",
+      stretch: "stretch",
+    };
+    document.documentElement.style.setProperty("--yoichi-note-save-align", alignMap[align]);
+    document.documentElement.style.setProperty(
+      "--yoichi-note-save-width",
+      align === "stretch" ? "100%" : `${width}%`
+    );
+    document.documentElement.style.setProperty("--yoichi-note-save-height", `${height}%`);
   };
 
   const getNoteOptions = () => {
@@ -800,6 +845,8 @@ const myWorkScript = (LZString, bootstrap) => {
 
   Order.historyRetrieve();
   applyCardCellScale();
+  applyActionUiConfig();
+  applyNoteSaveUiConfig();
   applyWorkSummaryVisibility();
   console.log(Order.orders);
   // new Order();
@@ -1315,7 +1362,7 @@ const myWorkScript = (LZString, bootstrap) => {
             </div>
             <div class="yoichi-card-bottom yoichi-summary-card-bottom">
               <div class="order-total-price">
-                <p>統計數量 ${totalPendingQty}</p>
+                <p class="yoichi-summary-total-count">統計數量 ${totalPendingQty}</p>
               </div>
               
             </div>
