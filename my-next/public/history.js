@@ -705,17 +705,48 @@ const myHistoryScript = (LZString, bootstrap) => {
     })();
     (function create_fulfilledOrdersSummary() {
       let products = ``;
-      Product.products.forEach((product) => {
-        const soldQty = Number(sellLog[normalizeProductName(product.name)]) || 0;
-        if (soldQty <= 0) return;
-        products =
-          products +
-          ` <div class="order-detail">
-        <div class="order-p-name"><p style="color:${normalizeTextColor(
-          product.textColor
-        )}">${product.name}</p></div>
-                <div class="order-p-number"><p>${soldQty}</p></div> </div> `;
+      const soldProducts = [];
+      const productMetaMap = new Map();
+      Product.products.forEach((product, index) => {
+        const normalizedName = normalizeProductName(product.name);
+        productMetaMap.set(normalizedName, {
+          displayName: product.name,
+          color: normalizeTextColor(product.textColor),
+          sortIndex: index,
+        });
       });
+
+      Object.entries(sellLog).forEach(([rawName, qty]) => {
+        const normalizedName = normalizeProductName(rawName);
+        const soldQty = Number(qty) || 0;
+        if (!normalizedName || soldQty <= 0) return;
+        const knownProduct = productMetaMap.get(normalizedName);
+        soldProducts.push({
+          name: knownProduct?.displayName || rawName,
+          color: knownProduct?.color || "#374151",
+          soldQty,
+          sortIndex:
+            typeof knownProduct?.sortIndex === "number"
+              ? knownProduct.sortIndex
+              : Number.MAX_SAFE_INTEGER,
+          normalizedName,
+        });
+      });
+
+      soldProducts
+        .sort((a, b) => {
+          if (a.sortIndex === b.sortIndex) {
+            return a.normalizedName.localeCompare(b.normalizedName);
+          }
+          return a.sortIndex - b.sortIndex;
+        })
+        .forEach((product) => {
+          products =
+            products +
+            ` <div class="order-detail">
+        <div class="order-p-name"><p style="color:${product.color}">${product.name}</p></div>
+                <div class="order-p-number"><p>${product.soldQty}</p></div> </div> `;
+        });
       // console.log(fulfilledOrdersTotalAmount); // 345元
       let yoichi_order_shown = document.createElement("section");
       yoichi_order_shown.classList = "yoichi-order-shown";
