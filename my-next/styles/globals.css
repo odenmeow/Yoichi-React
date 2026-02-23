@@ -477,6 +477,16 @@ body
   p.with-notation::before {
   content: "No.";
 }
+
+body
+  main
+  section.presentation-Area
+  .yoichi-order-shown
+  div.yoichi-card
+  div.yoichi-card-time-number
+  div.order-number.yoichi-order-number-production-active {
+  border-color: #111;
+}
 body
   main
   section.presentation-Area
@@ -660,18 +670,53 @@ body footer {
 }
 
 aside.floating-element {
-  border-radius: 50%;
   position: fixed;
-  height: 3rem;
-  width: 3rem;
-  font-size: 1.75rem;
   right: 1rem;
-  top: 50vh;
+  top: 38vh;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  text-align: center;
+  gap: 0.85rem;
+  z-index: 45;
 }
 aside.floating-element a {
   text-decoration: none;
+}
+
+.yoichi-production-ui-top,
+.yoichi-production-ui-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.yoichi-production-color-btn,
+.yoichi-production-jump-btn {
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 0.55rem;
+  border: 2px solid transparent;
+  cursor: pointer;
+  font-weight: 700;
+  color: #111827;
+}
+
+.yoichi-production-color-btn.is-active {
+  border-color: #111;
+  box-shadow: 0 0 0 1px #111;
+}
+
+.yoichi-production-jump-btn {
+  border-color: rgba(15, 23, 42, 0.35);
+}
+
+.newOrderBtn {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.7rem;
+  font-size: 1.7rem;
+  line-height: 1;
 }
 
 .popover-header {
@@ -940,16 +985,6 @@ main section.show-products.theme-contrast .yoichi-p-field .yoichi-p-label {
   color: #9ca3af;
 }
 
-aside.floating-element {
-  position: fixed;
-  height: 3rem;
-  width: 3rem;
-  font-size: 1.75rem;
-  right: 1rem;
-  top: 50vh;
-  align-items: center;
-  text-align: center;
-}
 aside.floating-element button {
   font-family: bold;
   text-decoration: none;

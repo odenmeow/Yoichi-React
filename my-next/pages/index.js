@@ -61,6 +61,9 @@ export default function Home() {
           >
             會員專區
           </Link>
+          <Link className="flex-sm-fill text-sm-center nav-link" href="/history">
+            歷史紀錄
+          </Link>
         </nav>
       </header>
       <main>
@@ -116,6 +119,11 @@ export default function Home() {
         <section className="presentation-Area"></section>
       </main>
       <aside className="floating-element">
+        <div className="yoichi-production-ui-top" aria-label="製作中 UI 顏色選擇">
+          <button type="button" className="yoichi-production-color-btn" data-production-color-tag="1"></button>
+          <button type="button" className="yoichi-production-color-btn" data-production-color-tag="2"></button>
+          <button type="button" className="yoichi-production-color-btn" data-production-color-tag="3"></button>
+        </div>
         <button
           type="button"
           className="newOrderBtn btn btn-primary"
@@ -123,6 +131,11 @@ export default function Home() {
         >
           +
         </button>
+        <div className="yoichi-production-ui-bottom" aria-label="製作中 UI 跳轉">
+          <button type="button" className="yoichi-production-jump-btn" data-production-color-tag="1">1</button>
+          <button type="button" className="yoichi-production-jump-btn" data-production-color-tag="2">2</button>
+          <button type="button" className="yoichi-production-jump-btn" data-production-color-tag="3">3</button>
+        </div>
       </aside>
       {/* <Script src="./app.js"></Script> */}
 
