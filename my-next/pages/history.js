@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import "popper.js";
 import LZString from "lz-string";
 import myHistoryScript from "../public/history";
@@ -9,8 +9,6 @@ import { normalizeAppInteraction } from "../lib/viewCleanup";
 const HISTORY_ENTRY_FLAG = "yoichi-history-entry-from-member";
 
 export default function History() {
-  const [showStats, setShowStats] = useState(false);
-
   useEffect(() => {
     normalizeAppInteraction();
     const timer = setInterval(normalizeAppInteraction, 700);
@@ -20,8 +18,6 @@ export default function History() {
   useEffect(() => {
     const member = getCurrentMember();
     const fromMember = sessionStorage.getItem(HISTORY_ENTRY_FLAG) === "1";
-    setShowStats(Boolean(member && fromMember));
-
     normalizeAppInteraction();
 
     const bootstrapFallback = { Popover: class {} };
@@ -70,6 +66,9 @@ export default function History() {
           >
             工作區
           </Link>
+          <Link className="flex-sm-fill text-sm-center nav-link active" href="#">
+            歷史紀錄
+          </Link>
           <Link
             className="flex-sm-fill text-sm-center nav-link"
             href="/edit"
@@ -80,18 +79,10 @@ export default function History() {
           <Link className="flex-sm-fill text-sm-center nav-link" href="/member">
             會員專區
           </Link>
-          <Link className="flex-sm-fill text-sm-center nav-link active" href="#">
-            歷史紀錄
-          </Link>
         </nav>
       </header>
 
       <main>
-        {!showStats ? (
-          <p style={{ margin: "0.9rem 1rem 0", color: "#64748b" }}>
-            目前為一般模式：可查看歷史並取消完成，統計資料（數量、金額）僅在會員專區進入時顯示。
-          </p>
-        ) : null}
         <section
           className="presentation-Area"
           style={{ height: "65vh", marginTop: "1rem" }}

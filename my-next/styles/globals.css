@@ -691,6 +691,14 @@ aside.floating-element a {
   gap: 0.55rem;
 }
 
+.yoichi-production-ui-label {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #334155;
+  line-height: 1;
+}
+
 .yoichi-production-color-btn,
 .yoichi-production-jump-btn {
   width: 2.3rem;
@@ -717,6 +725,7 @@ aside.floating-element a {
   border-radius: 0.7rem;
   font-size: 1.7rem;
   line-height: 1;
+  margin: 0.45rem 0;
 }
 
 .popover-header {
