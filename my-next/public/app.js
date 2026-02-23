@@ -42,6 +42,19 @@ const myWorkScript = (LZString, bootstrap) => {
 
   const normalizeProductName = (value) => String(value || "").trim();
 
+  const PRODUCTION_UI_COLORS = {
+    1: "#fbcaca",
+    2: "#fed7aa",
+    3: "#86efac",
+  };
+  const PRODUCTION_UI_SELECTED_KEY = "yoichi-production-ui-selected-color";
+  let selectedProductionColor =
+    Number(safeStorageGet(PRODUCTION_UI_SELECTED_KEY)) || 1;
+  if (!PRODUCTION_UI_COLORS[selectedProductionColor]) {
+    selectedProductionColor = 1;
+  }
+  let productionJumpCursor = { 1: 0, 2: 0, 3: 0 };
+
 
   const PRODUCT_DEFAULTS = [
     { name: "香腸", price: 45, discountQty: 0, discountAmount: 0, textColor: "#ff0000" },
@@ -369,7 +382,7 @@ const myWorkScript = (LZString, bootstrap) => {
         }
       }
       Order.historyUpdate();
-      loadOrderPage();
+      loadOrderPage({ preserveScroll: true });
       closeModal();
     });
 
@@ -782,7 +795,8 @@ const myWorkScript = (LZString, bootstrap) => {
       orderDate,
       status,
       itemNotes,
-      globalNotes
+      globalNotes,
+      productionUiColor
     ) {
       // 短路做法  JS 獨有 特性 ，JAVA無。
       this.productsLog = productsLog || Product.products;
@@ -793,6 +807,9 @@ const myWorkScript = (LZString, bootstrap) => {
       this.status = status || "pending";
       this.itemNotes = cloneItemNotes(itemNotes);
       this.globalNotes = cloneItemNotes(globalNotes);
+      this.productionUiColor = PRODUCTION_UI_COLORS[Number(productionUiColor)]
+        ? Number(productionUiColor)
+        : null;
       // status : pending paid fulfill
       Order.orders.push(this);
       // 生成完畢.........無論 [選取資料] 從何取得都 清空。
@@ -853,6 +870,7 @@ const myWorkScript = (LZString, bootstrap) => {
           status,
           itemNotes,
           globalNotes,
+          productionUiColor,
         }) => {
           const safeProductsLog = Array.isArray(productsLog)
             ? productsLog.map(
@@ -879,7 +897,8 @@ const myWorkScript = (LZString, bootstrap) => {
             orderDate,
             status,
             itemNotes,
-            globalNotes
+            globalNotes,
+            productionUiColor
           ); //如果有傳入則用傳入的資訊
         }
       );
@@ -934,11 +953,82 @@ const myWorkScript = (LZString, bootstrap) => {
     return matched ? Number(matched[0]) : 0;
   };
 
+  const getProductionColorByTag = (tag) =>
+    PRODUCTION_UI_COLORS[Number(tag)] || "";
+
+  const setSelectedProductionColor = (tag) => {
+    const parsed = Number(tag);
+    if (!PRODUCTION_UI_COLORS[parsed]) return;
+    selectedProductionColor = parsed;
+    safeStorageSet(PRODUCTION_UI_SELECTED_KEY, String(parsed));
+    document.querySelectorAll(".yoichi-production-color-btn").forEach((btn) => {
+      const btnTag = Number(btn.dataset.productionColorTag);
+      btn.classList.toggle("is-active", btnTag === selectedProductionColor);
+    });
+  };
+
+  const getOrdersByProductionColor = (tag) =>
+    Order.orders
+      .map((order, index) => ({ order, index }))
+      .filter(({ order }) => Number(order.productionUiColor) === Number(tag));
+
+  const jumpToProductionColorOrder = (tag) => {
+    const parsed = Number(tag);
+    const grouped = getOrdersByProductionColor(parsed);
+    if (grouped.length === 0) return;
+    const pointer = productionJumpCursor[parsed] || 0;
+    const target = grouped[pointer % grouped.length];
+    productionJumpCursor[parsed] = (pointer + 1) % grouped.length;
+    const targetCard = document.querySelector(
+      `.order-number[data-order-index="${target.index}"]`
+    );
+    if (!targetCard) return;
+    targetCard.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  };
+
+  const bindProductionUiControls = () => {
+    document.querySelectorAll(".yoichi-production-color-btn").forEach((btn) => {
+      const colorTag = Number(btn.dataset.productionColorTag);
+      btn.style.backgroundColor = getProductionColorByTag(colorTag);
+      btn.addEventListener("click", () => {
+        setSelectedProductionColor(colorTag);
+      });
+    });
+
+    document.querySelectorAll(".yoichi-production-jump-btn").forEach((btn) => {
+      const colorTag = Number(btn.dataset.productionColorTag);
+      btn.style.backgroundColor = getProductionColorByTag(colorTag);
+      btn.addEventListener("click", () => {
+        jumpToProductionColorOrder(colorTag);
+      });
+    });
+
+    setSelectedProductionColor(selectedProductionColor);
+  };
+
+  const bindOrderNumberProductionToggle = () => {
+    document.querySelectorAll(".order-number[data-order-index]").forEach((cell) => {
+      cell.addEventListener("click", () => {
+        const orderIndex = Number(cell.dataset.orderIndex);
+        const order = Order.orders[orderIndex];
+        if (!order) return;
+        if (Number(order.productionUiColor) === selectedProductionColor) {
+          order.productionUiColor = null;
+        } else {
+          order.productionUiColor = selectedProductionColor;
+        }
+        Order.historyUpdate();
+        loadOrderPage({ preserveScroll: true });
+      });
+    });
+  };
+
   Order.historyRetrieve();
   applyCardCellScale();
   applyActionUiConfig();
   applyNoteSaveUiConfig();
   applyWorkSummaryVisibility();
+  bindProductionUiControls();
   console.log(Order.orders);
   // new Order();
   // console.log(Order.orders);
@@ -1330,10 +1420,12 @@ const myWorkScript = (LZString, bootstrap) => {
 
   // ==========下方為訂單區，f5 (reload) 時 ，拉當天資料 ，初始顯示===========
 
-  function loadOrderPage() {
+  function loadOrderPage(options = {}) {
+    const preserveScroll = !!options.preserveScroll;
     closeAllPopovers();
     resetPopoverObservers();
     let orderScreen = document.querySelector(".presentation-Area");
+    const prevScrollLeft = preserveScroll ? orderScreen?.scrollLeft || 0 : 0;
     // 清空避免二度呼叫內部已經有東西又追加!
     orderScreen.innerHTML = "";
     let pendingLog = {};
@@ -1371,7 +1463,7 @@ const myWorkScript = (LZString, bootstrap) => {
           <div class="yoichi-card">
             <div class="yoichi-card-time-number">
               <div class="order-time yoichi-order-global-note-trigger ${hasGlobalNotes(order, getNoteOptions()) ? "yoichi-has-global-note" : ""}" data-order-index="${index}"><p>${order.orderTime}</p></div>
-              <div class="order-number "><p class="with-notation">${index}</p></div>
+              <div class="order-number ${order.productionUiColor ? "yoichi-order-number-production-active" : ""}" data-order-index="${index}" style="background-color:${getProductionColorByTag(order.productionUiColor) || ""}"><p class="with-notation">${index}</p></div>
             </div>
             <div class="yoichi-card-order-detail">
               
@@ -1468,10 +1560,15 @@ const myWorkScript = (LZString, bootstrap) => {
     })();
 
     bindOrderNoteTriggers();
+    bindOrderNumberProductionToggle();
 
     requestAnimationFrame(() => {
       if (orderScreen && typeof orderScreen.scrollTo === "function") {
-        orderScreen.scrollTo({ left: 0, behavior: "smooth" });
+        if (preserveScroll) {
+          orderScreen.scrollTo({ left: prevScrollLeft, behavior: "instant" });
+        } else {
+          orderScreen.scrollTo({ left: 0, behavior: "smooth" });
+        }
       }
     });
 

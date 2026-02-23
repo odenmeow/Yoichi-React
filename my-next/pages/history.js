@@ -1,36 +1,18 @@
 import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
 import "popper.js";
 import LZString from "lz-string";
 import myHistoryScript from "../public/history";
 import Link from "next/link";
-import {
-  getCurrentMember,
-  getRememberedAccount,
-  loginMember,
-  logoutMember,
-  logoutWhenHidden,
-  setRememberedAccount,
-} from "../lib/memberAuth";
+import { getCurrentMember, logoutMember } from "../lib/memberAuth";
 import { normalizeAppInteraction } from "../lib/viewCleanup";
 
 const HISTORY_ENTRY_FLAG = "yoichi-history-entry-from-member";
 
 export default function History() {
-  const router = useRouter();
-  const [allowed, setAllowed] = useState(false);
-  const [account, setAccount] = useState("");
-  const [password, setPassword] = useState("");
-  const [rememberAccount, setRememberAccount] = useState(true);
-  const [message, setMessage] = useState("");
+  const [showStats, setShowStats] = useState(false);
 
   useEffect(() => {
     normalizeAppInteraction();
-    const remembered = getRememberedAccount();
-    if (remembered) {
-      setAccount(remembered);
-      setRememberAccount(true);
-    }
     const timer = setInterval(normalizeAppInteraction, 700);
     return () => clearInterval(timer);
   }, []);
@@ -38,18 +20,7 @@ export default function History() {
   useEffect(() => {
     const member = getCurrentMember();
     const fromMember = sessionStorage.getItem(HISTORY_ENTRY_FLAG) === "1";
-
-    if (member && fromMember) {
-      setAllowed(true);
-      return;
-    }
-
-    setAllowed(false);
-    sessionStorage.removeItem(HISTORY_ENTRY_FLAG);
-  }, []);
-
-  useEffect(() => {
-    if (!allowed) return;
+    setShowStats(Boolean(member && fromMember));
 
     normalizeAppInteraction();
 
@@ -58,7 +29,9 @@ export default function History() {
     const initializePage = () => {
       if (initialized) return;
       initialized = true;
-      myHistoryScript(LZString, window.bootstrap || bootstrapFallback);
+      myHistoryScript(LZString, window.bootstrap || bootstrapFallback, {
+        showStats: Boolean(member && fromMember),
+      });
       normalizeAppInteraction();
     };
 
@@ -71,46 +44,15 @@ export default function History() {
     const fallbackTimer = setTimeout(initializePage, 1500);
     document.body.appendChild(script);
 
-    const cleanupHidden = logoutWhenHidden();
-    const syncSession = () => {
-      if (!getCurrentMember()) {
-        setAllowed(false);
-        sessionStorage.removeItem(HISTORY_ENTRY_FLAG);
-        router.replace("/member");
-      }
-    };
-    document.addEventListener("visibilitychange", syncSession);
-
     return () => {
       clearTimeout(fallbackTimer);
-      cleanupHidden();
-      document.removeEventListener("visibilitychange", syncSession);
       window.__yoichiHistoryScriptInitialized = false;
+      if (typeof window.__yoichiHistoryCleanup === "function") {
+        window.__yoichiHistoryCleanup();
+      }
       document.body.removeChild(script);
     };
-  }, [allowed, router]);
-
-  const handleLogin = (event) => {
-    event.preventDefault();
-    const result = loginMember(account, password);
-    setMessage(result.message);
-    if (result.ok) {
-      if (rememberAccount) {
-        setRememberedAccount(account);
-      } else {
-        setRememberedAccount("");
-      }
-      setPassword("");
-      sessionStorage.setItem(HISTORY_ENTRY_FLAG, "1");
-      setAllowed(true);
-    }
-  };
-
-  const handleBackToMember = () => {
-    logoutMember();
-    sessionStorage.removeItem(HISTORY_ENTRY_FLAG);
-    router.replace("/member");
-  };
+  }, []);
 
   const handleLeaveHistory = () => {
     logoutMember();
@@ -135,69 +77,29 @@ export default function History() {
           >
             功能編輯
           </Link>
-          <Link className="flex-sm-fill text-sm-center nav-link active" href="/member">
+          <Link className="flex-sm-fill text-sm-center nav-link" href="/member">
+            會員專區
+          </Link>
+          <Link className="flex-sm-fill text-sm-center nav-link active" href="#">
             歷史紀錄
           </Link>
         </nav>
       </header>
 
       <main>
-        {!allowed ? (
-          <section style={{ maxWidth: 560, margin: "2rem auto", padding: "0 1rem" }}>
-            <form style={{ display: "grid", gap: "0.75rem" }}>
-              <h3 style={{ marginBottom: "0.25rem" }}>登入後才能查看歷史紀錄</h3>
-              <input
-                className="form-control"
-                placeholder="帳號"
-                value={account}
-                onChange={(e) => setAccount(e.target.value)}
-              />
-              <input
-                type="password"
-                className="form-control"
-                placeholder="密碼"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <label style={{ display: "flex", alignItems: "center", gap: "0.45rem", marginBottom: 0 }}>
-                <input
-                  type="checkbox"
-                  checked={rememberAccount}
-                  onChange={(e) => setRememberAccount(e.target.checked)}
-                />
-                記住帳號
-              </label>
-              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                <button className="btn btn-primary" onClick={handleLogin}>
-                  登入並查看
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  onClick={handleBackToMember}
-                >
-                  回會員專區
-                </button>
-              </div>
-              {message ? (
-                <p style={{ margin: 0, color: message.includes("成功") ? "#0f766e" : "#b91c1c" }}>
-                  {message}
-                </p>
-              ) : null}
-            </form>
-          </section>
-        ) : (
-          <>
-            <section
-              className="presentation-Area"
-              style={{ height: "65vh", marginTop: "1rem" }}
-            ></section>
-            <section
-              className="presentation-Area date-block"
-              style={{ height: "20vh", marginTop: "1rem" }}
-            ></section>
-          </>
-        )}
+        {!showStats ? (
+          <p style={{ margin: "0.9rem 1rem 0", color: "#64748b" }}>
+            目前為一般模式：可查看歷史並取消完成，統計資料（數量、金額）僅在會員專區進入時顯示。
+          </p>
+        ) : null}
+        <section
+          className="presentation-Area"
+          style={{ height: "65vh", marginTop: "1rem" }}
+        ></section>
+        <section
+          className="presentation-Area date-block"
+          style={{ height: "20vh", marginTop: "1rem" }}
+        ></section>
       </main>
 
       <footer>
