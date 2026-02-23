@@ -52,6 +52,9 @@ export default function Home() {
           >
             工作區
           </Link>
+          <Link className="flex-sm-fill text-sm-center nav-link" href="/history">
+            歷史紀錄
+          </Link>
           <Link className="flex-sm-fill text-sm-center nav-link" href="/edit">
             功能編輯
           </Link>
@@ -60,9 +63,6 @@ export default function Home() {
             href="/member"
           >
             會員專區
-          </Link>
-          <Link className="flex-sm-fill text-sm-center nav-link" href="/history">
-            歷史紀錄
           </Link>
         </nav>
       </header>
@@ -120,6 +120,7 @@ export default function Home() {
       </main>
       <aside className="floating-element">
         <div className="yoichi-production-ui-top" aria-label="製作中 UI 顏色選擇">
+          <p className="yoichi-production-ui-label">選色</p>
           <button type="button" className="yoichi-production-color-btn" data-production-color-tag="1"></button>
           <button type="button" className="yoichi-production-color-btn" data-production-color-tag="2"></button>
           <button type="button" className="yoichi-production-color-btn" data-production-color-tag="3"></button>
@@ -132,9 +133,10 @@ export default function Home() {
           +
         </button>
         <div className="yoichi-production-ui-bottom" aria-label="製作中 UI 跳轉">
-          <button type="button" className="yoichi-production-jump-btn" data-production-color-tag="1">1</button>
-          <button type="button" className="yoichi-production-jump-btn" data-production-color-tag="2">2</button>
-          <button type="button" className="yoichi-production-jump-btn" data-production-color-tag="3">3</button>
+          <p className="yoichi-production-ui-label">跳轉</p>
+          <button type="button" className="yoichi-production-jump-btn" data-production-color-tag="1">0</button>
+          <button type="button" className="yoichi-production-jump-btn" data-production-color-tag="2">0</button>
+          <button type="button" className="yoichi-production-jump-btn" data-production-color-tag="3">0</button>
         </div>
       </aside>
       {/* <Script src="./app.js"></Script> */}

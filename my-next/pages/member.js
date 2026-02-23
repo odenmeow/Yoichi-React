@@ -163,6 +163,9 @@ export default function Member() {
           >
             工作區
           </Link>
+          <Link className="flex-sm-fill text-sm-center nav-link" href="/history">
+            歷史紀錄
+          </Link>
           <Link
             className="flex-sm-fill text-sm-center nav-link"
             href="/edit"
@@ -172,9 +175,6 @@ export default function Member() {
           </Link>
           <Link className="flex-sm-fill text-sm-center nav-link active" href="#">
             會員專區
-          </Link>
-          <Link className="flex-sm-fill text-sm-center nav-link" href="/history">
-            歷史紀錄
           </Link>
         </nav>
       </header>
