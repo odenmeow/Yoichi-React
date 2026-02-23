@@ -672,7 +672,8 @@ body footer {
 aside.floating-element {
   position: fixed;
   right: 1rem;
-  top: 38vh;
+  top: 50%;
+  transform: translateY(-58%);
   display: flex;
   flex-direction: column;
   align-items: center;

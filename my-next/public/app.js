@@ -1022,26 +1022,92 @@ const myWorkScript = (LZString, bootstrap) => {
     document.querySelectorAll(".yoichi-production-jump-btn").forEach((btn) => {
       const colorTag = Number(btn.dataset.productionColorTag);
       btn.style.backgroundColor = getProductionColorByTag(colorTag);
-      let pointerDownX = null;
-      btn.addEventListener("pointerdown", (event) => {
-        pointerDownX = event.clientX;
-      });
-      btn.addEventListener("pointerup", (event) => {
-        const deltaX = pointerDownX == null ? 0 : event.clientX - pointerDownX;
-        pointerDownX = null;
-        if (deltaX <= -35) {
-          jumpToProductionColorOrder(colorTag, "latest");
-          return;
-        }
-        if (deltaX >= 35) {
+
+      let gestureState = null;
+      const SWIPE_THRESHOLD_PX = 24;
+      const VERTICAL_TOLERANCE_PX = 42;
+
+      const triggerJumpByGesture = (deltaX, deltaY) => {
+        if (Math.abs(deltaX) >= SWIPE_THRESHOLD_PX && Math.abs(deltaY) <= VERTICAL_TOLERANCE_PX) {
+          if (deltaX < 0) {
+            jumpToProductionColorOrder(colorTag, "latest");
+            return;
+          }
           jumpToProductionColorOrder(colorTag, "earliest");
           return;
         }
         jumpToProductionColorOrder(colorTag, "cycle");
+      };
+
+      btn.addEventListener("pointerdown", (event) => {
+        if (event.pointerType === "mouse" && event.button !== 0) return;
+        gestureState = {
+          pointerId: event.pointerId,
+          startX: event.clientX,
+          startY: event.clientY,
+          lastX: event.clientX,
+          lastY: event.clientY,
+        };
+        if (typeof btn.setPointerCapture === "function") {
+          try {
+            btn.setPointerCapture(event.pointerId);
+          } catch (error) {
+            // ignore capture errors
+          }
+        }
       });
+
+      btn.addEventListener("pointermove", (event) => {
+        if (!gestureState || event.pointerId !== gestureState.pointerId) return;
+        gestureState.lastX = event.clientX;
+        gestureState.lastY = event.clientY;
+      });
+
+      btn.addEventListener("pointerup", (event) => {
+        if (!gestureState || event.pointerId !== gestureState.pointerId) return;
+        const deltaX = (gestureState.lastX ?? event.clientX) - gestureState.startX;
+        const deltaY = (gestureState.lastY ?? event.clientY) - gestureState.startY;
+        gestureState = null;
+        triggerJumpByGesture(deltaX, deltaY);
+      });
+
       btn.addEventListener("pointercancel", () => {
-        pointerDownX = null;
+        gestureState = null;
       });
+
+      if (!("PointerEvent" in window)) {
+        btn.addEventListener("touchstart", (event) => {
+          const firstTouch = event.touches && event.touches[0];
+          if (!firstTouch) return;
+          gestureState = {
+            pointerId: "touch",
+            startX: firstTouch.clientX,
+            startY: firstTouch.clientY,
+            lastX: firstTouch.clientX,
+            lastY: firstTouch.clientY,
+          };
+        }, { passive: true });
+
+        btn.addEventListener("touchmove", (event) => {
+          if (!gestureState || gestureState.pointerId !== "touch") return;
+          const firstTouch = event.touches && event.touches[0];
+          if (!firstTouch) return;
+          gestureState.lastX = firstTouch.clientX;
+          gestureState.lastY = firstTouch.clientY;
+        }, { passive: true });
+
+        btn.addEventListener("touchend", () => {
+          if (!gestureState || gestureState.pointerId !== "touch") return;
+          const deltaX = gestureState.lastX - gestureState.startX;
+          const deltaY = gestureState.lastY - gestureState.startY;
+          gestureState = null;
+          triggerJumpByGesture(deltaX, deltaY);
+        });
+
+        btn.addEventListener("touchcancel", () => {
+          gestureState = null;
+        });
+      }
     });
 
     setSelectedProductionColor(selectedProductionColor);
