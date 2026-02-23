@@ -970,15 +970,39 @@ const myWorkScript = (LZString, bootstrap) => {
   const getOrdersByProductionColor = (tag) =>
     Order.orders
       .map((order, index) => ({ order, index }))
-      .filter(({ order }) => Number(order.productionUiColor) === Number(tag));
+      .filter(
+        ({ order }) =>
+          Number(order.productionUiColor) === Number(tag) &&
+          order.status !== "fulfilled" &&
+          order.status !== "deprecated"
+      );
 
-  const jumpToProductionColorOrder = (tag) => {
+  const refreshProductionJumpCounts = () => {
+    document.querySelectorAll(".yoichi-production-jump-btn").forEach((btn) => {
+      const colorTag = Number(btn.dataset.productionColorTag);
+      btn.textContent = String(getOrdersByProductionColor(colorTag).length);
+    });
+  };
+
+  const jumpToProductionColorOrder = (tag, mode = "cycle") => {
     const parsed = Number(tag);
     const grouped = getOrdersByProductionColor(parsed);
-    if (grouped.length === 0) return;
-    const pointer = productionJumpCursor[parsed] || 0;
-    const target = grouped[pointer % grouped.length];
-    productionJumpCursor[parsed] = (pointer + 1) % grouped.length;
+    if (grouped.length === 0) {
+      productionJumpCursor[parsed] = 0;
+      return;
+    }
+
+    let target = grouped[0];
+    if (mode === "latest") {
+      target = grouped[grouped.length - 1];
+    } else if (mode === "earliest") {
+      target = grouped[0];
+    } else {
+      const pointer = productionJumpCursor[parsed] || 0;
+      target = grouped[pointer % grouped.length];
+      productionJumpCursor[parsed] = (pointer + 1) % grouped.length;
+    }
+
     const targetCard = document.querySelector(
       `.order-number[data-order-index="${target.index}"]`
     );
@@ -998,12 +1022,30 @@ const myWorkScript = (LZString, bootstrap) => {
     document.querySelectorAll(".yoichi-production-jump-btn").forEach((btn) => {
       const colorTag = Number(btn.dataset.productionColorTag);
       btn.style.backgroundColor = getProductionColorByTag(colorTag);
-      btn.addEventListener("click", () => {
-        jumpToProductionColorOrder(colorTag);
+      let pointerDownX = null;
+      btn.addEventListener("pointerdown", (event) => {
+        pointerDownX = event.clientX;
+      });
+      btn.addEventListener("pointerup", (event) => {
+        const deltaX = pointerDownX == null ? 0 : event.clientX - pointerDownX;
+        pointerDownX = null;
+        if (deltaX <= -35) {
+          jumpToProductionColorOrder(colorTag, "latest");
+          return;
+        }
+        if (deltaX >= 35) {
+          jumpToProductionColorOrder(colorTag, "earliest");
+          return;
+        }
+        jumpToProductionColorOrder(colorTag, "cycle");
+      });
+      btn.addEventListener("pointercancel", () => {
+        pointerDownX = null;
       });
     });
 
     setSelectedProductionColor(selectedProductionColor);
+    refreshProductionJumpCounts();
   };
 
   const bindOrderNumberProductionToggle = () => {
@@ -1561,6 +1603,7 @@ const myWorkScript = (LZString, bootstrap) => {
 
     bindOrderNoteTriggers();
     bindOrderNumberProductionToggle();
+    refreshProductionJumpCounts();
 
     requestAnimationFrame(() => {
       if (orderScreen && typeof orderScreen.scrollTo === "function") {
