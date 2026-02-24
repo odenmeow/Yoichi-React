@@ -721,6 +721,11 @@ aside.floating-element a {
   touch-action: none;
 }
 
+
+.yoichi-production-qty-cell {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
 .newOrderBtn {
   width: 3rem;
   height: 3rem;
