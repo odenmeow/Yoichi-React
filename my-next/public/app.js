@@ -597,7 +597,7 @@ const myWorkScript = (LZString, bootstrap) => {
         closeAllPopovers();
         Order.historyUpdate();
         displayProducts("new");
-        loadOrderPage();
+        loadOrderPage({ preserveScroll: true });
         return;
       }
 
@@ -615,7 +615,7 @@ const myWorkScript = (LZString, bootstrap) => {
           closeAllPopovers();
           Order.historyUpdate();
           displayProducts("new");
-          loadOrderPage();
+          loadOrderPage({ preserveScroll: true });
         } else {
           (function showWarn() {
             let body = document.querySelector("body");
