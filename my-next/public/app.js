@@ -1027,6 +1027,37 @@ const myWorkScript = (LZString, bootstrap) => {
       const SWIPE_THRESHOLD_PX = 24;
       const VERTICAL_TOLERANCE_PX = 42;
 
+      const clearPointerTracking = () => {
+        window.removeEventListener("pointermove", onWindowPointerMove);
+        window.removeEventListener("pointerup", onWindowPointerUp);
+        window.removeEventListener("pointercancel", onWindowPointerCancel);
+      };
+
+      const finalizeGesture = (event) => {
+        if (!gestureState || event.pointerId !== gestureState.pointerId) return;
+        const deltaX = (gestureState.lastX ?? event.clientX) - gestureState.startX;
+        const deltaY = (gestureState.lastY ?? event.clientY) - gestureState.startY;
+        gestureState = null;
+        clearPointerTracking();
+        triggerJumpByGesture(deltaX, deltaY);
+      };
+
+      const onWindowPointerMove = (event) => {
+        if (!gestureState || event.pointerId !== gestureState.pointerId) return;
+        gestureState.lastX = event.clientX;
+        gestureState.lastY = event.clientY;
+      };
+
+      const onWindowPointerUp = (event) => {
+        finalizeGesture(event);
+      };
+
+      const onWindowPointerCancel = (event) => {
+        if (!gestureState || event.pointerId !== gestureState.pointerId) return;
+        gestureState = null;
+        clearPointerTracking();
+      };
+
       const triggerJumpByGesture = (deltaX, deltaY) => {
         if (Math.abs(deltaX) >= SWIPE_THRESHOLD_PX && Math.abs(deltaY) <= VERTICAL_TOLERANCE_PX) {
           if (deltaX < 0) {
@@ -1055,24 +1086,21 @@ const myWorkScript = (LZString, bootstrap) => {
             // ignore capture errors
           }
         }
-      });
-
-      btn.addEventListener("pointermove", (event) => {
-        if (!gestureState || event.pointerId !== gestureState.pointerId) return;
-        gestureState.lastX = event.clientX;
-        gestureState.lastY = event.clientY;
+        window.addEventListener("pointermove", onWindowPointerMove);
+        window.addEventListener("pointerup", onWindowPointerUp);
+        window.addEventListener("pointercancel", onWindowPointerCancel);
       });
 
       btn.addEventListener("pointerup", (event) => {
-        if (!gestureState || event.pointerId !== gestureState.pointerId) return;
-        const deltaX = (gestureState.lastX ?? event.clientX) - gestureState.startX;
-        const deltaY = (gestureState.lastY ?? event.clientY) - gestureState.startY;
-        gestureState = null;
-        triggerJumpByGesture(deltaX, deltaY);
+        finalizeGesture(event);
       });
 
-      btn.addEventListener("pointercancel", () => {
-        gestureState = null;
+      btn.addEventListener("pointercancel", (event) => {
+        onWindowPointerCancel(event);
+      });
+
+      btn.addEventListener("lostpointercapture", (event) => {
+        onWindowPointerCancel(event);
       });
 
       if (!("PointerEvent" in window)) {
