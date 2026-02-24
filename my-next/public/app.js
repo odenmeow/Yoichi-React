@@ -48,12 +48,21 @@ const myWorkScript = (LZString, bootstrap) => {
     3: "#86efac",
   };
   const PRODUCTION_UI_SELECTED_KEY = "yoichi-production-ui-selected-color";
+  const PRODUCTION_QTY_MARKERS_KEY = "yoichi-production-qty-markers";
   let selectedProductionColor =
     Number(safeStorageGet(PRODUCTION_UI_SELECTED_KEY)) || 1;
   if (!PRODUCTION_UI_COLORS[selectedProductionColor]) {
     selectedProductionColor = 1;
   }
   let productionJumpCursor = { 1: 0, 2: 0, 3: 0 };
+  let summaryQtyMarkers = safeParseJSON(safeStorageGet(PRODUCTION_QTY_MARKERS_KEY));
+  if (!summaryQtyMarkers || typeof summaryQtyMarkers !== "object") {
+    summaryQtyMarkers = {};
+  }
+
+  const saveSummaryQtyMarkers = () => {
+    safeStorageSet(PRODUCTION_QTY_MARKERS_KEY, JSON.stringify(summaryQtyMarkers));
+  };
 
 
   const PRODUCT_DEFAULTS = [
@@ -516,9 +525,25 @@ const myWorkScript = (LZString, bootstrap) => {
       return ai - bi;
     });
 
+  const normalizeMarkerTag = (tag) =>
+    PRODUCTION_UI_COLORS[Number(tag)] ? Number(tag) : null;
+
+  const normalizeQtyMarkerMap = (raw) => {
+    if (!raw || typeof raw !== "object") return {};
+    const normalized = {};
+    Object.keys(raw).forEach((key) => {
+      const markerTag = normalizeMarkerTag(raw[key]);
+      if (markerTag) {
+        normalized[normalizeProductName(key)] = markerTag;
+      }
+    });
+    return normalized;
+  };
+
   const buildOrderDetailsHtml = (details = [], productColorMap, orderIndex, order) => {
     const noteOptions = getNoteOptions();
     const globalApplied = hasGlobalNotes(order, noteOptions);
+    const qtyMarkers = normalizeQtyMarkerMap(order.qtyMarkers);
     return details
       .map((pick) => {
         const productName = normalizeProductName(pick.pickedName);
@@ -529,13 +554,14 @@ const myWorkScript = (LZString, bootstrap) => {
           ? "yoichi-has-global-note"
           : "";
         const qty = Number(pick.pickedNumber) || 0;
+        const qtyMarkerTag = qtyMarkers[productName] || null;
         return ` <div class="order-detail">
         <div class="order-p-name yoichi-order-note-trigger ${cellClass}" data-order-index="${orderIndex}" data-product-name="${encodeURIComponent(
           productName
         )}" data-qty="${qty}"><p style="color:${
           productColorMap.get(productName) || "inherit"
         }">${pick.pickedName}</p></div>
-                <div class="order-p-number"><p>${pick.pickedNumber}</p></div> </div> `;
+                <div class="order-p-number yoichi-production-qty-cell ${qtyMarkerTag ? "yoichi-production-qty-cell-active" : ""}" data-order-index="${orderIndex}" data-product-name="${encodeURIComponent(productName)}" style="background-color:${getProductionColorByTag(qtyMarkerTag) || ""}"><p>${pick.pickedNumber}</p></div> </div> `;
       })
       .join("");
   };
@@ -796,7 +822,8 @@ const myWorkScript = (LZString, bootstrap) => {
       status,
       itemNotes,
       globalNotes,
-      productionUiColor
+      productionUiColor,
+      qtyMarkers
     ) {
       // 短路做法  JS 獨有 特性 ，JAVA無。
       this.productsLog = productsLog || Product.products;
@@ -810,6 +837,7 @@ const myWorkScript = (LZString, bootstrap) => {
       this.productionUiColor = PRODUCTION_UI_COLORS[Number(productionUiColor)]
         ? Number(productionUiColor)
         : null;
+      this.qtyMarkers = normalizeQtyMarkerMap(qtyMarkers);
       // status : pending paid fulfill
       Order.orders.push(this);
       // 生成完畢.........無論 [選取資料] 從何取得都 清空。
@@ -871,6 +899,7 @@ const myWorkScript = (LZString, bootstrap) => {
           itemNotes,
           globalNotes,
           productionUiColor,
+          qtyMarkers,
         }) => {
           const safeProductsLog = Array.isArray(productsLog)
             ? productsLog.map(
@@ -898,7 +927,8 @@ const myWorkScript = (LZString, bootstrap) => {
             status,
             itemNotes,
             globalNotes,
-            productionUiColor
+            productionUiColor,
+            qtyMarkers
           ); //如果有傳入則用傳入的資訊
         }
       );
@@ -1154,6 +1184,45 @@ const myWorkScript = (LZString, bootstrap) => {
           order.productionUiColor = selectedProductionColor;
         }
         Order.historyUpdate();
+        loadOrderPage({ preserveScroll: true });
+      });
+    });
+  };
+
+  const bindQuantityMarkerToggle = () => {
+    document.querySelectorAll('.yoichi-production-qty-cell[data-order-index][data-product-name]').forEach((cell) => {
+      cell.addEventListener("click", () => {
+        const orderIndex = Number(cell.dataset.orderIndex);
+        const productName = decodeURIComponent(cell.dataset.productName || "");
+        const order = Order.orders[orderIndex];
+        if (!order || !productName) return;
+        const key = normalizeProductName(productName);
+        const currentTag = normalizeMarkerTag(order.qtyMarkers?.[key]);
+        if (!order.qtyMarkers || typeof order.qtyMarkers !== "object") {
+          order.qtyMarkers = {};
+        }
+        if (currentTag === selectedProductionColor) {
+          delete order.qtyMarkers[key];
+        } else {
+          order.qtyMarkers[key] = selectedProductionColor;
+        }
+        Order.historyUpdate();
+        loadOrderPage({ preserveScroll: true });
+      });
+    });
+
+    document.querySelectorAll('.yoichi-production-qty-cell[data-summary-product-name]').forEach((cell) => {
+      cell.addEventListener("click", () => {
+        const productName = decodeURIComponent(cell.dataset.summaryProductName || "");
+        if (!productName) return;
+        const key = normalizeProductName(productName);
+        const currentTag = normalizeMarkerTag(summaryQtyMarkers[key]);
+        if (currentTag === selectedProductionColor) {
+          delete summaryQtyMarkers[key];
+        } else {
+          summaryQtyMarkers[key] = selectedProductionColor;
+        }
+        saveSummaryQtyMarkers();
         loadOrderPage({ preserveScroll: true });
       });
     });
@@ -1486,8 +1555,10 @@ const myWorkScript = (LZString, bootstrap) => {
           }
         });
         const originalItemNotes = cloneItemNotes(Order.orders[oid]?.itemNotes);
+        const originalQtyMarkers = normalizeQtyMarkerMap(Order.orders[oid]?.qtyMarkers);
         let o = new Order();
         o.itemNotes = originalItemNotes;
+        o.qtyMarkers = originalQtyMarkers;
         Order.orders.pop();
         Order.orders[oid] = o;
         displayProducts("new");
@@ -1638,16 +1709,18 @@ const myWorkScript = (LZString, bootstrap) => {
       let products = ``;
       let totalPendingQty = 0;
       Product.products.forEach((product) => {
-        const pendingQty = Number(pendingLog[normalizeProductName(product.name)]) || 0;
+        const normalizedName = normalizeProductName(product.name);
+        const pendingQty = Number(pendingLog[normalizedName]) || 0;
         if (pendingQty <= 0) return;
         totalPendingQty += pendingQty;
+        const markerTag = normalizeMarkerTag(summaryQtyMarkers[normalizedName]);
         products =
           products +
           ` <div class="order-detail">
         <div class="order-p-name"><p style="color:${normalizeTextColor(
           product.textColor
         )}">${product.name}</p></div>
-                <div class="order-p-number"><p>${pendingQty}</p></div> </div> `;
+                <div class="order-p-number yoichi-production-qty-cell ${markerTag ? "yoichi-production-qty-cell-active" : ""}" data-summary-product-name="${encodeURIComponent(normalizedName)}" style="background-color:${getProductionColorByTag(markerTag) || ""}"><p>${pendingQty}</p></div> </div> `;
       });
       Object.keys(pendingLog).forEach((name) => {
         const normalizedName = normalizeProductName(name);
@@ -1658,7 +1731,8 @@ const myWorkScript = (LZString, bootstrap) => {
         const pendingQty = Number(pendingLog[normalizedName]) || 0;
         if (pendingQty <= 0) return;
         totalPendingQty += pendingQty;
-        products += ` <div class="order-detail"><div class="order-p-name"><p>${normalizedName}</p></div><div class="order-p-number"><p>${pendingQty}</p></div></div> `;
+        const markerTag = normalizeMarkerTag(summaryQtyMarkers[normalizedName]);
+        products += ` <div class="order-detail"><div class="order-p-name"><p>${normalizedName}</p></div><div class="order-p-number yoichi-production-qty-cell ${markerTag ? "yoichi-production-qty-cell-active" : ""}" data-summary-product-name="${encodeURIComponent(normalizedName)}" style="background-color:${getProductionColorByTag(markerTag) || ""}"><p>${pendingQty}</p></div></div> `;
       });
       if (!products) {
         products = ` <div class="order-detail"><div class="order-p-name"><p>目前無未完成品項</p></div><div class="order-p-number"><p>0</p></div></div> `;
@@ -1697,6 +1771,7 @@ const myWorkScript = (LZString, bootstrap) => {
 
     bindOrderNoteTriggers();
     bindOrderNumberProductionToggle();
+    bindQuantityMarkerToggle();
     refreshProductionJumpCounts();
 
     requestAnimationFrame(() => {
