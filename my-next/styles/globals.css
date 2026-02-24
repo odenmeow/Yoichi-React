@@ -722,9 +722,11 @@ aside.floating-element a {
 }
 
 
-.yoichi-production-qty-cell {
+.yoichi-production-qty-cell,
+.yoichi-production-qty-target {
   cursor: pointer;
   transition: background-color 0.15s ease;
+  user-select: none;
 }
 .newOrderBtn {
   width: 3rem;

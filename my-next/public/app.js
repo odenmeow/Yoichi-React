@@ -55,6 +55,7 @@ const myWorkScript = (LZString, bootstrap) => {
     selectedProductionColor = 1;
   }
   let productionJumpCursor = { 1: 0, 2: 0, 3: 0 };
+  let qtyMarkerGlobalListenersBound = false;
   let summaryQtyMarkers = safeParseJSON(safeStorageGet(PRODUCTION_QTY_MARKERS_KEY));
   if (!summaryQtyMarkers || typeof summaryQtyMarkers !== "object") {
     summaryQtyMarkers = {};
@@ -540,6 +541,11 @@ const myWorkScript = (LZString, bootstrap) => {
     return normalized;
   };
 
+  const renderQtyMarkerAttrs = (markerTag) => {
+    const color = getProductionColorByTag(markerTag) || "";
+    return `data-qty-marker-tag="${markerTag || ""}" style="background-color:${color}"`;
+  };
+
   const buildOrderDetailsHtml = (details = [], productColorMap, orderIndex, order) => {
     const noteOptions = getNoteOptions();
     const globalApplied = hasGlobalNotes(order, noteOptions);
@@ -555,13 +561,13 @@ const myWorkScript = (LZString, bootstrap) => {
           : "";
         const qty = Number(pick.pickedNumber) || 0;
         const qtyMarkerTag = qtyMarkers[productName] || null;
-        return ` <div class="order-detail">
+        return ` <div class="order-detail" data-qty-marker-scope="order" data-order-index="${orderIndex}" data-product-name="${encodeURIComponent(productName)}">
         <div class="order-p-name yoichi-order-note-trigger ${cellClass}" data-order-index="${orderIndex}" data-product-name="${encodeURIComponent(
           productName
         )}" data-qty="${qty}"><p style="color:${
           productColorMap.get(productName) || "inherit"
         }">${pick.pickedName}</p></div>
-                <div class="order-p-number yoichi-production-qty-cell ${qtyMarkerTag ? "yoichi-production-qty-cell-active" : ""}" data-order-index="${orderIndex}" data-product-name="${encodeURIComponent(productName)}" style="background-color:${getProductionColorByTag(qtyMarkerTag) || ""}"><p>${pick.pickedNumber}</p></div> </div> `;
+                <div class="order-p-number yoichi-production-qty-cell yoichi-production-qty-target ${qtyMarkerTag ? "yoichi-production-qty-cell-active" : ""}" data-order-index="${orderIndex}" data-product-name="${encodeURIComponent(productName)}" ${renderQtyMarkerAttrs(qtyMarkerTag)}><p>${pick.pickedNumber}</p></div> </div> `;
       })
       .join("");
   };
@@ -1190,43 +1196,119 @@ const myWorkScript = (LZString, bootstrap) => {
   };
 
   const bindQuantityMarkerToggle = () => {
-    document.querySelectorAll('.yoichi-production-qty-cell[data-order-index][data-product-name]').forEach((cell) => {
-      cell.addEventListener("click", () => {
-        const orderIndex = Number(cell.dataset.orderIndex);
+    const applyMarkerVisualToRow = (scope, productName, markerTag, orderIndex) => {
+      const encodedName = encodeURIComponent(productName);
+      const selector =
+        scope === "order"
+          ? `.order-detail[data-qty-marker-scope="order"][data-order-index="${orderIndex}"][data-product-name="${encodedName}"]`
+          : `.yoichi-order-summary-sticky .order-detail[data-qty-marker-scope="summary"][data-product-name="${encodedName}"]`;
+      const row = document.querySelector(selector);
+      if (!row) return;
+      const color = getProductionColorByTag(markerTag) || "";
+      row.querySelectorAll(".yoichi-production-qty-target").forEach((cell) => {
+        cell.style.backgroundColor = color;
+        cell.dataset.qtyMarkerTag = markerTag ? String(markerTag) : "";
+        cell.classList.toggle("yoichi-production-qty-cell-active", !!markerTag);
+      });
+    };
+
+    const updateOrderMarker = (orderIndex, productName, shouldApply) => {
+      const order = Order.orders[orderIndex];
+      if (!order) return;
+      const key = normalizeProductName(productName);
+      if (!order.qtyMarkers || typeof order.qtyMarkers !== "object") {
+        order.qtyMarkers = {};
+      }
+      const nextTag = shouldApply ? selectedProductionColor : null;
+      if (nextTag) {
+        order.qtyMarkers[key] = nextTag;
+      } else {
+        delete order.qtyMarkers[key];
+      }
+      applyMarkerVisualToRow("order", key, nextTag, orderIndex);
+      Order.historyUpdate();
+    };
+
+    const updateSummaryMarker = (productName, shouldApply) => {
+      const key = normalizeProductName(productName);
+      const nextTag = shouldApply ? selectedProductionColor : null;
+      if (nextTag) {
+        summaryQtyMarkers[key] = nextTag;
+      } else {
+        delete summaryQtyMarkers[key];
+      }
+      applyMarkerVisualToRow("summary", key, nextTag);
+      saveSummaryQtyMarkers();
+    };
+
+    let dragState = null;
+    const endDrag = () => {
+      dragState = null;
+    };
+
+    const applyTarget = (target) => {
+      if (!target || !target.dataset) return;
+      const row = target.closest(".order-detail");
+      const scope = row?.dataset.qtyMarkerScope;
+      const productName = decodeURIComponent(target.dataset.productName || row?.dataset.productName || "");
+      if (!scope || !productName) return;
+      if (scope === "order") {
+        const orderIndex = Number(target.dataset.orderIndex);
+        if (!Number.isFinite(orderIndex)) return;
+        const key = `order-${orderIndex}-${productName}`;
+        if (dragState?.visited?.has(key)) return;
+        dragState?.visited?.add(key);
+        updateOrderMarker(orderIndex, productName, !!dragState?.shouldApply);
+        return;
+      }
+      const key = `summary-${productName}`;
+      if (dragState?.visited?.has(key)) return;
+      dragState?.visited?.add(key);
+      updateSummaryMarker(productName, !!dragState?.shouldApply);
+    };
+
+    document.querySelectorAll('.yoichi-production-qty-target').forEach((cell) => {
+      cell.addEventListener("pointerdown", (event) => {
+        if (event.pointerType === "mouse" && event.button !== 0) return;
+        const scope = cell.closest(".order-detail")?.dataset.qtyMarkerScope;
         const productName = decodeURIComponent(cell.dataset.productName || "");
-        const order = Order.orders[orderIndex];
-        if (!order || !productName) return;
-        const key = normalizeProductName(productName);
-        const currentTag = normalizeMarkerTag(order.qtyMarkers?.[key]);
-        if (!order.qtyMarkers || typeof order.qtyMarkers !== "object") {
-          order.qtyMarkers = {};
+        if (!scope || !productName) return;
+
+        let currentTag = normalizeMarkerTag(cell.dataset.qtyMarkerTag);
+        if (!currentTag && scope === "order") {
+          const orderIndex = Number(cell.dataset.orderIndex);
+          currentTag = normalizeMarkerTag(Order.orders[orderIndex]?.qtyMarkers?.[normalizeProductName(productName)]);
         }
-        if (currentTag === selectedProductionColor) {
-          delete order.qtyMarkers[key];
-        } else {
-          order.qtyMarkers[key] = selectedProductionColor;
+        if (!currentTag && scope === "summary") {
+          currentTag = normalizeMarkerTag(summaryQtyMarkers[normalizeProductName(productName)]);
         }
-        Order.historyUpdate();
-        loadOrderPage({ preserveScroll: true });
+
+        dragState = {
+          shouldApply: currentTag !== selectedProductionColor,
+          visited: new Set(),
+        };
+        applyTarget(cell);
+      });
+
+      cell.addEventListener("pointerenter", () => {
+        if (!dragState) return;
+        applyTarget(cell);
+      });
+
+      cell.addEventListener("click", (event) => {
+        if (dragState) {
+          event.preventDefault();
+        }
       });
     });
 
-    document.querySelectorAll('.yoichi-production-qty-cell[data-summary-product-name]').forEach((cell) => {
-      cell.addEventListener("click", () => {
-        const productName = decodeURIComponent(cell.dataset.summaryProductName || "");
-        if (!productName) return;
-        const key = normalizeProductName(productName);
-        const currentTag = normalizeMarkerTag(summaryQtyMarkers[key]);
-        if (currentTag === selectedProductionColor) {
-          delete summaryQtyMarkers[key];
-        } else {
-          summaryQtyMarkers[key] = selectedProductionColor;
-        }
-        saveSummaryQtyMarkers();
-        loadOrderPage({ preserveScroll: true });
-      });
-    });
+    if (!qtyMarkerGlobalListenersBound) {
+      window.addEventListener("pointerup", endDrag);
+      window.addEventListener("pointercancel", endDrag);
+      qtyMarkerGlobalListenersBound = true;
+    }
   };
+
 
   Order.historyRetrieve();
   applyCardCellScale();
@@ -1716,11 +1798,11 @@ const myWorkScript = (LZString, bootstrap) => {
         const markerTag = normalizeMarkerTag(summaryQtyMarkers[normalizedName]);
         products =
           products +
-          ` <div class="order-detail">
-        <div class="order-p-name"><p style="color:${normalizeTextColor(
+          ` <div class="order-detail" data-qty-marker-scope="summary" data-product-name="${encodeURIComponent(normalizedName)}">
+        <div class="order-p-name yoichi-production-qty-target ${markerTag ? "yoichi-production-qty-cell-active" : ""}" data-product-name="${encodeURIComponent(normalizedName)}" ${renderQtyMarkerAttrs(markerTag)}><p style="color:${normalizeTextColor(
           product.textColor
         )}">${product.name}</p></div>
-                <div class="order-p-number yoichi-production-qty-cell ${markerTag ? "yoichi-production-qty-cell-active" : ""}" data-summary-product-name="${encodeURIComponent(normalizedName)}" style="background-color:${getProductionColorByTag(markerTag) || ""}"><p>${pendingQty}</p></div> </div> `;
+                <div class="order-p-number yoichi-production-qty-cell yoichi-production-qty-target ${markerTag ? "yoichi-production-qty-cell-active" : ""}" data-product-name="${encodeURIComponent(normalizedName)}" ${renderQtyMarkerAttrs(markerTag)}><p>${pendingQty}</p></div> </div> `;
       });
       Object.keys(pendingLog).forEach((name) => {
         const normalizedName = normalizeProductName(name);
@@ -1732,7 +1814,7 @@ const myWorkScript = (LZString, bootstrap) => {
         if (pendingQty <= 0) return;
         totalPendingQty += pendingQty;
         const markerTag = normalizeMarkerTag(summaryQtyMarkers[normalizedName]);
-        products += ` <div class="order-detail"><div class="order-p-name"><p>${normalizedName}</p></div><div class="order-p-number yoichi-production-qty-cell ${markerTag ? "yoichi-production-qty-cell-active" : ""}" data-summary-product-name="${encodeURIComponent(normalizedName)}" style="background-color:${getProductionColorByTag(markerTag) || ""}"><p>${pendingQty}</p></div></div> `;
+        products += ` <div class="order-detail" data-qty-marker-scope="summary" data-product-name="${encodeURIComponent(normalizedName)}"><div class="order-p-name yoichi-production-qty-target ${markerTag ? "yoichi-production-qty-cell-active" : ""}" data-product-name="${encodeURIComponent(normalizedName)}" ${renderQtyMarkerAttrs(markerTag)}><p>${normalizedName}</p></div><div class="order-p-number yoichi-production-qty-cell yoichi-production-qty-target ${markerTag ? "yoichi-production-qty-cell-active" : ""}" data-product-name="${encodeURIComponent(normalizedName)}" ${renderQtyMarkerAttrs(markerTag)}><p>${pendingQty}</p></div></div> `;
       });
       if (!products) {
         products = ` <div class="order-detail"><div class="order-p-name"><p>目前無未完成品項</p></div><div class="order-p-number"><p>0</p></div></div> `;
