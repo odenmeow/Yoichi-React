@@ -5,6 +5,15 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
   window.__yoichiHistoryScriptInitialized = true;
 
   const showStats = config?.showStats !== false;
+  const STATUS_FILTER_OPTIONS = [
+    { key: "paid", label: "已付" },
+    { key: "pending", label: "未付" },
+    { key: "fulfilled", label: "完成" },
+    { key: "deprecated", label: "作廢" },
+  ];
+  const statusFilterState = {
+    selectedStatuses: new Set(["fulfilled"]),
+  };
 
   const normalizeTextColor = (value) => {
     if (typeof value !== "string") return "#ff0000";
@@ -538,6 +547,58 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
     popoverObservers = [];
   };
 
+  const shouldShowOrderByStatus = (status) => {
+    const selectedStatuses = statusFilterState.selectedStatuses;
+    if (selectedStatuses.size === STATUS_FILTER_OPTIONS.length) {
+      return true;
+    }
+    return selectedStatuses.has(status);
+  };
+
+  const updateHistoryFilterButtonUI = (panel) => {
+    if (!panel) return;
+    STATUS_FILTER_OPTIONS.forEach((option) => {
+      const button = panel.querySelector(
+        `[data-history-status-filter="${option.key}"]`
+      );
+      if (!button) return;
+      const active = statusFilterState.selectedStatuses.has(option.key);
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+  };
+
+  const setupHistoryStatusFilterPanel = (date) => {
+    const panel = document.querySelector(".history-filter-panel");
+    if (!panel) return;
+    panel.innerHTML = `
+      <p class="history-filter-title">僅顯示</p>
+      <div class="history-filter-buttons"></div>
+    `;
+    const buttonArea = panel.querySelector(".history-filter-buttons");
+    if (!buttonArea) return;
+    STATUS_FILTER_OPTIONS.forEach((option) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "btn btn-outline-primary history-filter-btn";
+      button.dataset.historyStatusFilter = option.key;
+      button.innerText = option.label;
+      button.addEventListener("click", () => {
+        const selectedStatuses = statusFilterState.selectedStatuses;
+        if (selectedStatuses.has(option.key)) {
+          if (selectedStatuses.size === 1) return;
+          selectedStatuses.delete(option.key);
+        } else {
+          selectedStatuses.add(option.key);
+        }
+        updateHistoryFilterButtonUI(panel);
+        loadOrderPage(date);
+      });
+      buttonArea.append(button);
+    });
+    updateHistoryFilterButtonUI(panel);
+  };
+
   // 會顯示所有狀態的版本
   function loadOrderPage(date) {
     closeAllPopovers();
@@ -587,9 +648,12 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
           // return ;不跳過了，創建該訂單
         }
         if (order.status == "deprecated") {
-          btnMsg = "廢棄";
+          btnMsg = "作廢";
           btnColor = "secondary";
           // return; 不跳過了
+        }
+        if (!shouldShowOrderByStatus(order.status)) {
+          return;
         }
         yoichi_order_shown.innerHTML = `
    
@@ -833,6 +897,7 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
     //console.log("我進來了", date);
     Order.historyRetrieve(date);
     //console.log(Order.orders);
+    setupHistoryStatusFilterPanel(date);
     loadOrderPage(date);
   }
   function selectedDate(num) {

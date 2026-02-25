@@ -357,6 +357,54 @@ body
   height: 80%;
   width: 80%;
 }
+body main section.history-layout {
+  width: calc(90vw + 8rem);
+  margin-left: 2rem;
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+body main section.history-layout section.presentation-Area {
+  left: 0;
+  margin-top: 0;
+  width: calc(100% - 8rem);
+}
+
+body main aside.history-filter-panel {
+  border: 2px #2563eb solid;
+  min-width: 7rem;
+  padding: 0.75rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  background: #f8fafc;
+}
+
+body main .history-filter-title {
+  text-align: center;
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+body main .history-filter-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+body main .history-filter-btn {
+  width: 100%;
+}
+
+body main .history-filter-btn.active {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+  color: #fff;
+}
+
 body main section.presentation-Area {
   position: relative;
   border: 3px blue solid;

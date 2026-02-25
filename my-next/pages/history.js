@@ -83,10 +83,10 @@ export default function History() {
       </header>
 
       <main>
-        <section
-          className="presentation-Area"
-          style={{ height: "65vh", marginTop: "1rem" }}
-        ></section>
+        <section className="history-layout" style={{ marginTop: "1rem" }}>
+          <section className="presentation-Area" style={{ height: "65vh" }}></section>
+          <aside className="history-filter-panel"></aside>
+        </section>
         <section
           className="presentation-Area date-block"
           style={{ height: "20vh", marginTop: "1rem" }}
