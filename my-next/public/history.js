@@ -14,6 +14,11 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
   const statusFilterState = {
     selectedStatuses: new Set(["fulfilled"]),
   };
+  let activeHistoryDate = null;
+  let pendingDateToLoad = null;
+  let dateLoadFrameId = null;
+  let pendingOrderRenderDate = null;
+  let orderRenderFrameId = null;
 
   const normalizeTextColor = (value) => {
     if (typeof value !== "string") return "#ff0000";
@@ -592,11 +597,38 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
           selectedStatuses.add(option.key);
         }
         updateHistoryFilterButtonUI(panel);
-        loadOrderPage(date);
+        scheduleOrderPageRender(date);
       });
       buttonArea.append(button);
     });
     updateHistoryFilterButtonUI(panel);
+  };
+
+  const scheduleOrderPageRender = (date) => {
+    pendingOrderRenderDate = date;
+    if (orderRenderFrameId !== null) {
+      cancelAnimationFrame(orderRenderFrameId);
+    }
+    orderRenderFrameId = requestAnimationFrame(() => {
+      orderRenderFrameId = null;
+      if (!pendingOrderRenderDate) return;
+      loadOrderPage(pendingOrderRenderDate);
+      pendingOrderRenderDate = null;
+    });
+  };
+
+  const scheduleDateLoad = (date) => {
+    if (!date || date === activeHistoryDate) return;
+    pendingDateToLoad = date;
+    if (dateLoadFrameId !== null) {
+      cancelAnimationFrame(dateLoadFrameId);
+    }
+    dateLoadFrameId = requestAnimationFrame(() => {
+      dateLoadFrameId = null;
+      if (!pendingDateToLoad) return;
+      loadOrdersByDate(pendingDateToLoad);
+      pendingDateToLoad = null;
+    });
   };
 
   // 會顯示所有狀態的版本
@@ -609,6 +641,8 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
     let sellLog = {};
     let fulfilledOrdersTotalAmount = 0;
     const { productIndexMap, productColorMap } = getProductOrderMeta();
+    const ordersFragment = document.createDocumentFragment();
+    const noteOptions = getNoteOptions();
     (function create_NotFulfilled_Orders() {
       Order.orders.forEach((order, index) => {
         const sortedDetails = sortPickedDetailsByProductOrder(
@@ -657,9 +691,9 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
         }
         yoichi_order_shown.innerHTML = `
    
-          <div class="yoichi-card">
+            <div class="yoichi-card">
             <div class="yoichi-card-time-number">
-              <div class="order-time yoichi-order-global-note-trigger ${hasGlobalNotes(order, getNoteOptions()) ? "yoichi-has-global-note" : ""}" data-order-index="${index}"><p>${order.orderTime}</p></div>
+              <div class="order-time yoichi-order-global-note-trigger ${hasGlobalNotes(order, noteOptions) ? "yoichi-has-global-note" : ""}" data-order-index="${index}"><p>${order.orderTime}</p></div>
               <div class="order-number "><p class="with-notation">${index}</p></div>
             </div>
             <div class="yoichi-card-order-detail">
@@ -677,22 +711,12 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
               </div>
             </div>
           </div>
-     `;
+        `;
         //   data-bs-trigger="focus"
-        let shownExist = orderScreen.querySelector(".yoichi-order-shown");
-        if (shownExist) {
-          orderScreen.insertBefore(yoichi_order_shown, shownExist);
-        } else {
-          orderScreen.append(yoichi_order_shown);
-        }
-        const popoverTriggerList = document.querySelectorAll(
-          '[data-bs-toggle="popover"]'
-        );
-        const popoverList = [...popoverTriggerList].map(
-          (popoverTriggerEl) => new bootstrap.Popover(popoverTriggerEl)
-        );
+        ordersFragment.prepend(yoichi_order_shown);
       });
     })();
+    orderScreen.append(ordersFragment);
     if (showStats) {
       (function create_fulfilledOrdersSummary() {
       let products = ``;
@@ -773,6 +797,16 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
 
     bindHistoryNoteTriggers();
 
+    orderScreen
+      .querySelectorAll('[data-bs-toggle="popover"]')
+      .forEach((popoverTriggerEl) => {
+        try {
+          new bootstrap.Popover(popoverTriggerEl);
+        } catch (error) {
+          console.warn("popover 初始化失敗", error);
+        }
+      });
+
     // 替.popover-body 裡面增加元素，然後flex，放三個按鈕!
     let btns = orderScreen.querySelectorAll(".yoichi-triplebtn");
     // console.log(btns);
@@ -826,7 +860,7 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
                 //console.log(Order.orders[header_num]);
                 //   displayProducts("new"); //編輯到一半付錢就視同放棄修改
 
-                loadOrderPage(date);
+                scheduleOrderPageRender(date);
               });
               // 這邊是歷史紀錄，所以中間這個按鈕實際功能為作廢!!!
               reviseBtn.addEventListener("click", (e) => {
@@ -850,7 +884,7 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
                 //console.log(Order.orders[header_num]);
                 //   displayProducts("new"); //編輯到一半付錢就視同放棄修改
 
-                loadOrderPage(date);
+                scheduleOrderPageRender(date);
               });
               fulfillBtn.addEventListener("click", (e) => {
                 //console.log("fulfillBtn數字是" + header_num);
@@ -864,7 +898,7 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
 
                   Order.historyUpdate(date); //保存狀態否則畫面f5刷新就沒了
                   // displayProducts("new");
-                  loadOrderPage(date);
+                  scheduleOrderPageRender(date);
                 } else {
                   // 不可以跳過付錢的警告
                   (function showWarn() {
@@ -895,6 +929,7 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
   }
   function loadOrdersByDate(date) {
     //console.log("我進來了", date);
+    activeHistoryDate = date;
     Order.historyRetrieve(date);
     //console.log(Order.orders);
     setupHistoryStatusFilterPanel(date);
@@ -1014,7 +1049,7 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
           //console.log(e.currentTarget); //這才是我要的!
           let fullStr =
             "yoichiOrders-" + e.currentTarget.querySelector("p").innerText;
-          loadOrdersByDate(fullStr);
+          scheduleDateLoad(fullStr);
         });
       });
       //console.log("追加完畢");
@@ -1045,6 +1080,16 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
   selectedDate(3);
 
   window.__yoichiHistoryCleanup = () => {
+    if (dateLoadFrameId !== null) {
+      cancelAnimationFrame(dateLoadFrameId);
+      dateLoadFrameId = null;
+    }
+    if (orderRenderFrameId !== null) {
+      cancelAnimationFrame(orderRenderFrameId);
+      orderRenderFrameId = null;
+    }
+    pendingDateToLoad = null;
+    pendingOrderRenderDate = null;
     closeAllPopovers();
     resetPopoverObservers();
   };
