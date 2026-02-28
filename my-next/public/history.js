@@ -591,7 +591,6 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
       button.addEventListener("click", () => {
         const selectedStatuses = statusFilterState.selectedStatuses;
         if (selectedStatuses.has(option.key)) {
-          if (selectedStatuses.size === 1) return;
           selectedStatuses.delete(option.key);
         } else {
           selectedStatuses.add(option.key);
