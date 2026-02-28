@@ -399,15 +399,18 @@ body main .history-filter-btn {
   width: 100%;
 }
 
-body main .history-filter-btn.btn-outline-primary:hover,
-body main .history-filter-btn.btn-outline-primary:focus,
-body main .history-filter-btn.btn-outline-primary:active {
+body main .history-filter-btn.btn-outline-primary:not(.active):hover,
+body main .history-filter-btn.btn-outline-primary:not(.active):focus,
+body main .history-filter-btn.btn-outline-primary:not(.active):active {
   background: transparent;
   color: #0d6efd;
   border-color: #0d6efd;
 }
 
-body main .history-filter-btn.active {
+body main .history-filter-btn.active,
+body main .history-filter-btn.active:hover,
+body main .history-filter-btn.active:focus,
+body main .history-filter-btn.active:active {
   background: #0ea5e9;
   border-color: #0ea5e9;
   color: #fff;
