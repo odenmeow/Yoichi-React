@@ -18,7 +18,7 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
   let pendingDateToLoad = null;
   let dateLoadFrameId = null;
   let pendingOrderRenderDate = null;
-  let orderRenderFrameId = null;
+  let orderRenderTimeoutId = null;
 
   const normalizeTextColor = (value) => {
     if (typeof value !== "string") return "#ff0000";
@@ -588,7 +588,7 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
       button.className = "btn btn-outline-primary history-filter-btn";
       button.dataset.historyStatusFilter = option.key;
       button.innerText = option.label;
-      button.addEventListener("click", () => {
+      button.addEventListener("click", (event) => {
         const selectedStatuses = statusFilterState.selectedStatuses;
         if (selectedStatuses.has(option.key)) {
           selectedStatuses.delete(option.key);
@@ -596,6 +596,12 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
           selectedStatuses.add(option.key);
         }
         updateHistoryFilterButtonUI(panel);
+
+        const clickedButton = event.currentTarget;
+        if (clickedButton instanceof HTMLElement) {
+          clickedButton.blur();
+        }
+
         scheduleOrderPageRender(date);
       });
       buttonArea.append(button);
@@ -605,15 +611,16 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
 
   const scheduleOrderPageRender = (date) => {
     pendingOrderRenderDate = date;
-    if (orderRenderFrameId !== null) {
-      cancelAnimationFrame(orderRenderFrameId);
+    if (orderRenderTimeoutId !== null) {
+      clearTimeout(orderRenderTimeoutId);
     }
-    orderRenderFrameId = requestAnimationFrame(() => {
-      orderRenderFrameId = null;
+    orderRenderTimeoutId = setTimeout(() => {
+      orderRenderTimeoutId = null;
       if (!pendingOrderRenderDate) return;
-      loadOrderPage(pendingOrderRenderDate);
+      const targetDate = pendingOrderRenderDate;
       pendingOrderRenderDate = null;
-    });
+      loadOrderPage(targetDate);
+    }, 0);
   };
 
   const scheduleDateLoad = (date) => {
@@ -1083,9 +1090,9 @@ const myHistoryScript = (LZString, bootstrap, config = {}) => {
       cancelAnimationFrame(dateLoadFrameId);
       dateLoadFrameId = null;
     }
-    if (orderRenderFrameId !== null) {
-      cancelAnimationFrame(orderRenderFrameId);
-      orderRenderFrameId = null;
+    if (orderRenderTimeoutId !== null) {
+      clearTimeout(orderRenderTimeoutId);
+      orderRenderTimeoutId = null;
     }
     pendingDateToLoad = null;
     pendingOrderRenderDate = null;
